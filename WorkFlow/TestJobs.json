@@ -1,0 +1,83 @@
+{
+    "1a": {
+        "name" : "relaxation",
+        "JobClass" : "Relaxation",
+        "job_type" : "VASP",
+        "nnodes" : 4,
+        "std_incar" :  {
+            "ISTART": 0, 
+            "ISPIN" : 2, 
+            "LWAVE" : ".FALSE.", 
+            "ALGO" : "N", 
+            "NPAR" : 16, 
+            "KPAR" : 8 , 
+            "ISMEAR" : 0, 
+            "SIGMA" : 0.0001, 
+            "NELM" : 120,
+            "GGA": "PS", 
+            "ENCUT": 500, 
+            "EDIFF" : 1.0e-8, 
+            "IBRION" : 2, 
+            "ISIF" : 3,
+            "POTIM": 0.10, 
+            "NSW" : 50, 
+            "NELMIN" : 4, 
+            "EDIFFG" : -1.0e-3},
+        "req_output" : "file:CONTCAR"
+
+    },
+
+    "2a": {
+        "name" : "spinsstates",
+        "JobClass" : "SpinStateScan",
+        "job_type" : "VASP",
+        "use_poscar_from" : "1a",
+        "nnodes" : 2,
+        "std_incar" :  {
+            "ISTART": 0, 
+            "ISPIN" : 2, 
+            "LWAVE" : ".FALSE.", 
+            "ALGO" : "N", 
+            "NPAR" : 8, 
+            "KPAR" : 4 , 
+            "ISMEAR" : 0, 
+            "SIGMA" : 0.0001, 
+            "NELM" : 180,
+            "GGA": "PE",
+            "ISYM" : -1, 
+            "ENCUT": 350, 
+            "EDIFF" : 1.0e-4,
+            "LORBIT" : 10},
+
+        "req_output" : "data:opt_magmom"
+
+    },
+
+    "3a": {
+        "name" : "preconv",
+        "JobClass" : "SimpleVasp",
+        "job_type" : "VASP",
+        "use_poscar_from": "1a",
+        "nnodes" : 2,
+        "std_incar" :  {
+            "ISTART": 0, 
+            "ISPIN" : 2, 
+            "LWAVE" : ".TRUE.", 
+            "ALGO" : "N", 
+            "NPAR" : 16, 
+            "KPAR" : 8 , 
+            "ISMEAR" : 0, 
+            "SIGMA" : 0.0001, 
+            "NELM" : 180,
+            "GGA": "PE",
+            "ISYM" : 0, 
+            "ENCUT": 350, 
+            "EDIFF" : 1.0e-4,
+            "LORBIT" : 11,
+            "NEDOS" : 2000},
+        "req_output" : "file:WAVECAR"
+
+    }
+
+
+}
