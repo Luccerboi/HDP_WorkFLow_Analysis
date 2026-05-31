@@ -93,16 +93,17 @@ irs_full = irs_full.drop([1, 1])
 
 class SingleHDPanalysis:
     """This class contains functions used to collect and analyze data for a spicific composition
-    from the database. 
+    from the database.
     """
+
     def __init__(self, comp: compound, LedgerInfo: pd.Series):
         """Initializes the class aimed at analyzing data for a specific compostion from the HDP database.
-        Paths to relevant output files will be set depending on the job completion. 
+        Paths to relevant output files will be set depending on the job completion.
         Input data and orbitals will be set as attributes.
 
         Args:
             comp (compound): Instance of compound class containing the elemental and input info.
-            LedgerInfo (pd.Series): Row of the ProcessLedger corresponding to *comp* containing the required computational info. 
+            LedgerInfo (pd.Series): Row of the ProcessLedger corresponding to *comp* containing the required computational info.
         """
         self.comp = comp
         self.ledgerinfo = LedgerInfo
@@ -124,7 +125,7 @@ class SingleHDPanalysis:
             self.path_to_doscar = Path(self.jobpaths["4HSE"]) / "DOSCAR"
 
         if bool(int(self.jobcompletion["5LOB"])):
-            self.used_basis = "basisset0"  
+            self.used_basis = "basisset0"
             self.path_to_lsodos = (
                 Path(self.jobpaths["5LOB"]) / self.used_basis / "DOSCAR.LSO.lobster"
             )
@@ -133,15 +134,15 @@ class SingleHDPanalysis:
             )
         self.input_dict = self._get_WFinput_dict()
 
-    def update_lobbasis(self, basis:str):
+    def update_lobbasis(self, basis: str):
         """This function will be used by GroupedHDPanalysis in order to change the basisset of the LOBSTER projection if required.
         Used to change the paths to LOBSTER output files for analysis functions.
 
         Args:
-            basis (str): The name of the basis set to be used (basisset*). 
+            basis (str): The name of the basis set to be used (basisset*).
                          Needs to match the subdirectory name for downstream functionality!
         """
-        self.used_basis = basis  
+        self.used_basis = basis
         self.path_to_lsodos = (
             Path(self.jobpaths["5LOB"]) / self.used_basis / "DOSCAR.LSO.lobster"
         )
@@ -194,7 +195,7 @@ class SingleHDPanalysis:
         """Calculates Bartel's tau-factor, and M.R. Filip's generalized t-factor with geometric limits for this composition.
 
         Returns:
-            dict: Dictionary of used ionic radii, tau-factor, t-factor, octahedral factor, octahedral mismatch, 
+            dict: Dictionary of used ionic radii, tau-factor, t-factor, octahedral factor, octahedral mismatch,
                     whether geometric limits are broken, and if so, which.
         """
 
@@ -480,7 +481,7 @@ class SingleHDPanalysis:
 
         Returns:
             dict: Dictionary containing VBM, CBM and bandgap energies, and valence and conduction states.
-                  high level keys are ['Spin.up','Spin.down','combined'] where combined contains the info from the spin channel with 
+                  high level keys are ['Spin.up','Spin.down','combined'] where combined contains the info from the spin channel with
                   highest VBM and lowest CBM.
         """
 
@@ -603,7 +604,7 @@ class SingleHDPanalysis:
     ) -> dict:
         """Similar to self.analyze_bandedges() only saves the relative contributions of each species in a way thats easier to combine with pd.Dataframes.
         Instead of nested dictionairy containing orbital contributions, it saves the total contribution of a species and the largest contributing orbital.
-        
+
         Calls self._get_bandedges_[dos/eigenval] and self.get_rel_dos_contributions() and collects the relevant info in a dict.
         The dict contains the VBM, CBM, bandgap, and relative contributions for each spin-channel separately and a combined
         channel where the overall bandgap is determined and the corresponding orbital contributions are saved.
@@ -616,7 +617,7 @@ class SingleHDPanalysis:
 
         Returns:
             dict: Dictionary containing VBM, CBM and bandgap energies, and valence and conduction states.
-                  high level keys are ['Spin.up','Spin.down','combined'] where combined contains the info from the spin channel with 
+                  high level keys are ['Spin.up','Spin.down','combined'] where combined contains the info from the spin channel with
                   highest VBM and lowest CBM.
         """
         edge_dict = self.analyze_bandedges(
@@ -946,9 +947,8 @@ class SingleHDPanalysis:
             summed_spins (bool, optional): Whether spin-up and down states should be summed. Defaults to False.
 
         Returns:
-            dict[site_index,Dos]: Dictionary containing total pDOS per site. 
+            dict[site_index,Dos]: Dictionary containing total pDOS per site.
         """
-
 
         site_spd_dos = self.get_spddos_per_site(dos_type, summed_spins=False)
         energies = site_spd_dos["energies"]
@@ -982,15 +982,13 @@ class SingleHDPanalysis:
         return site_tdos
 
     def get_spddos_per_species(
-        self, 
-        dos_type: Literal["vasp", "lso", "lobster"], 
-        summed_spins: bool = False
+        self, dos_type: Literal["vasp", "lso", "lobster"], summed_spins: bool = False
     ) -> dict:
         """Retrieve orbital resolved pDOS per species (A/B1/B2/X). Retrieved by summing pDOS over symmetrically equivalent sites.
 
         Args:
             dos_type (Literal[&quot;vasp&quot;, &quot;lso&quot;, &quot;lobster&quot;]): The DOSCAR of which basis should be analyzed.
-            summed_spins (bool, optional): Whether spin-up and down states should be summed. Defaults to False.        
+            summed_spins (bool, optional): Whether spin-up and down states should be summed. Defaults to False.
 
         Returns:
             dict[(A/B1/B2/X), orbital, Dos]: Dictionary containing the orbital resolved pDOS per species of this composition.
@@ -1162,17 +1160,25 @@ class SingleHDPanalysis:
         Returns:
             dict: Dictionary containing total DOS and pDOS per site.
         """
-        
+
         cdos = self.get_CompleteDosObject(dos_type)
         dos_dict = {}
-        dos_dict.update({"tdos": {'densities':cdos.get_smeared_densities(smearing_width)}})
+        dos_dict.update(
+            {"tdos": {"densities": cdos.get_smeared_densities(smearing_width)}}
+        )
         dos_dict["tdos"].update({"energies": cdos.energies})
         dos_dict.update({"tdos_per_site": {}})
         dos_dict["tdos_per_site"].update({"energies": cdos.energies})
 
         for ii, site in enumerate(cdos.structure.sites):
             dos_dict["tdos_per_site"].update(
-                {ii: {'densities':cdos.get_site_dos(site).get_smeared_densities(smearing_width)}}
+                {
+                    ii: {
+                        "densities": cdos.get_site_dos(site).get_smeared_densities(
+                            smearing_width
+                        )
+                    }
+                }
             )
 
         return dos_dict
@@ -1268,7 +1274,7 @@ class SingleHDPanalysis:
         Detecting performed calculations is based on presence of subdirectories with fixed naming scheme (basisset*)
 
         Returns:
-            dict[basisset#,quality_overview]: Dictionary containing charge spillings, and band overlaps for each basisset. 
+            dict[basisset#,quality_overview]: Dictionary containing charge spillings, and band overlaps for each basisset.
         """
         basesdirs = glob.glob(self.jobpaths["5LOB"] + "/basisset*")
         basesdirs.sort()
@@ -1938,13 +1944,14 @@ class GroupedAnalysis:
     """This class takes care of collecting the data for the entire HDP database.
     Initializing this class will create SingleHDPanalysis objects for each composition and call its methods and
     collect its data into DataFrames for each.
-    Methods that are named 'process_comp_....' are used to collect data from a single composition, which gets used in a 
-    multiprocess pool by methods called 'get_...' or 'save_...' 
+    Methods that are named 'process_comp_....' are used to collect data from a single composition, which gets used in a
+    multiprocess pool by methods called 'get_...' or 'save_...'
     Attributes:
         complist (list[compound]): list of compound objects that have completed the required simulation step
-        analysislist (list[SingleHDPanalysis]): list of SingleHDPanalysis objects 
+        analysislist (list[SingleHDPanalysis]): list of SingleHDPanalysis objects
         basis_selected (bool): indicator if the lobster basisset selection has happened.
     """
+
     def __init__(
         self, ledger: ProcessLedger, required_step: str = "5LOB", testing: int = 0
     ):
@@ -1952,12 +1959,12 @@ class GroupedAnalysis:
         Some functionality may not work if you deviate from requiring the last step ("5LOB") to be finished,
         but you could for example analyze structures based on all comps that completed "1Rel".
 
-        Based on the completion overview from the ProcessLedger, it will initialize SingleHDPanalysis objects 
+        Based on the completion overview from the ProcessLedger, it will initialize SingleHDPanalysis objects
         for each composition that completed the required steps and save it in an attribute.
 
         Args:
             ledger (ProcessLedger): The ProcessLedger used to track the process for all compositions.
-            required_step (str, optional): Which step of the workflow needs to be completed to perform 
+            required_step (str, optional): Which step of the workflow needs to be completed to perform
                                             the intended analysis. Defaults to "5LOB".
             testing (int, optional): If larger than 0 only this number of compositions will be analyzed.
                                     can be used to test on a small subset first. Defaults to 0.
@@ -2001,16 +2008,16 @@ class GroupedAnalysis:
         saving_dir: Path = Path("."),
     ):
         """Collects or reads projection quality for all calculated LOBSTER projection bases.
-        If any minimal basisset projection has charge spilling over 3%, it will chose an 
+        If any minimal basisset projection has charge spilling over 3%, it will chose an
         alternative basis (if available) with the lowest charge spilling.
 
         Args:
-            saved_qualityoverview (Path | str | None, optional): If the projection quality 
+            saved_qualityoverview (Path | str | None, optional): If the projection quality
                                     overview was previously generated, it can be read in stead of
                                     re-analyzing all bases. Defaults to None.
-            save_badprojections (bool, optional): Saves a separate overview with all bases that 
+            save_badprojections (bool, optional): Saves a separate overview with all bases that
                                         result in charge spilling over 3%. Defaults to False.
-            saving_dir (Path, optional): Path to save qualityoverview (and bad projections). 
+            saving_dir (Path, optional): Path to save qualityoverview (and bad projections).
                                         Defaults to Path(".").
         """
 
@@ -2050,6 +2057,7 @@ class GroupedAnalysis:
 
     def plot_doscar_single(self, comp: SingleHDPanalysis) -> None:
         from pdosplotter_adapted import plot_tdos
+
         """Plots the total DOS and pDOS for a single composition
         accesses attributes self.dostype and self.output_dir 
         which need to be set by the calling function (plot_doscar_all)
@@ -2073,7 +2081,7 @@ class GroupedAnalysis:
         self, dos_type: Literal["vasp", "lso", "lobster"], output_dir: Path = Path(".")
     ):
         """Plots the total DOS and pDOS for all compositions and saves the figures.
-        Uses the self.plot_doscar_single() method combined with multiprocess.Pool 
+        Uses the self.plot_doscar_single() method combined with multiprocess.Pool
 
         Args:
             dos_type (Literal[&quot;vasp&quot;, &quot;lso&quot;, &quot;lobster&quot;]): which type of DOSCAR to plot from
@@ -2109,7 +2117,7 @@ class GroupedAnalysis:
 
     def process_comp_edgecontr(self, comp: SingleHDPanalysis):
         """Calls the function to analyze band edge contributions for a specific composition.
-        accesses the attribute self.dostype to determine which DOSCAR type needs to be analyzed 
+        accesses the attribute self.dostype to determine which DOSCAR type needs to be analyzed
         (is set by calling function)
 
         Args:
@@ -2122,7 +2130,7 @@ class GroupedAnalysis:
 
     def process_comp_completedos(self, comp: SingleHDPanalysis):
         """Retrieves pymatgen CompleteDos object for a specific composition and saves to a json.
-        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and 
+        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and
         where to store the json. These attributes are set by the calling function.
 
         Args:
@@ -2159,7 +2167,7 @@ class GroupedAnalysis:
         return
 
     def process_comp_savecohp_smeared(self, comp: SingleHDPanalysis):
-        """Calls the function to parse COHPCAR or COBICAR for specific composition, 
+        """Calls the function to parse COHPCAR or COBICAR for specific composition,
          Adds additional Gaussian smearing, and saves to json.
         Uses attributes self.coxx_type, self.smearing_width, and self.output_dir to determine which file to parse,
         how much smearing to apply, and where to store the json files. These attributes are set by the calling function.
@@ -2167,7 +2175,8 @@ class GroupedAnalysis:
         Args:
             comp (SingleHDPanalysis): analysis object of specific composition.
         """
-        def get_smeared_coxx(coxx,energies, sigma: float) -> dict:
+
+        def get_smeared_coxx(coxx, energies, sigma: float) -> dict:
             """Get the the COHPCAR with a Gaussian smearing.
 
             Args:
@@ -2176,34 +2185,41 @@ class GroupedAnalysis:
             Returns:
                 {Spin: NDArray}: Gaussian-smeared DOS by spin.
             """
-            diff = [energies[idx + 1] - energies[idx] for idx in range(len(energies) - 1)]
+            diff = [
+                energies[idx + 1] - energies[idx] for idx in range(len(energies) - 1)
+            ]
             avg_diff = sum(diff) / len(diff)
-            return {spin: gaussian_filter1d(coxx, sigma / avg_diff) for spin, coxx in coxx.items()}
+            return {
+                spin: gaussian_filter1d(coxx, sigma / avg_diff)
+                for spin, coxx in coxx.items()
+            }
 
         output_dir = self.output_dir
         coxx_type = self.coxx_type
         parescohp = comp.get_parsed_coxx(coxx_type=coxx_type)
         newdict = {}
-        newdict.update({
-            'efermi': parescohp['efermi'],
-            'specie.B1' : parescohp['specie.B1'],
-            'specie.B2' : parescohp['specie.B2'],
-            'specie.A' : parescohp['specie.A'],
-            'specie.X' : parescohp['specie.X'],
-            'energies': parescohp['energies'],
-        })
+        newdict.update(
+            {
+                "efermi": parescohp["efermi"],
+                "specie.B1": parescohp["specie.B1"],
+                "specie.B2": parescohp["specie.B2"],
+                "specie.A": parescohp["specie.A"],
+                "specie.X": parescohp["specie.X"],
+                "energies": parescohp["energies"],
+            }
+        )
 
         for key, val in parescohp.items():
-            if key.startswith('coxx') and (val is not None ):
-                newdict[key] = get_smeared_coxx(val,parescohp['energies'],sigma=self.smearing_width)
+            if key.startswith("coxx") and (val is not None):
+                newdict[key] = get_smeared_coxx(
+                    val, parescohp["energies"], sigma=self.smearing_width
+                )
 
         filename = Path(output_dir) / f"{comp.comp.CompID}_smeared{coxx_type}.json"
         with open(filename, "w") as f:
             json.dump(jsanitize(newdict), f)
 
         return
-
-
 
     def process_comp_basic(self, comp: SingleHDPanalysis):
         """Retrieves data on specific composition based on input given to the workflow
@@ -2273,9 +2289,9 @@ class GroupedAnalysis:
         """Parses DOSCAR, resolved on species (A/B1/B2/X) level and saves to json.
         Will save total DOS, total pDOS per species, and orbital resolved pDOS per species.
 
-        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and 
+        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and
         where to store the json. These attributes are set by the calling function.
-        
+
         Args:
             comp (SingleHDPanalysis): analysis object for specific composition.
         """
@@ -2295,7 +2311,7 @@ class GroupedAnalysis:
         """Parses DOSCAR to site resolved level and saves to json.
         Will save total DOS, total pDOS per site, and orbital resolved pDOS per site.
 
-        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and 
+        Uses attributes self.dostype and self.output_dir to determine which DOSCAR to parse and
         where to store the json. These attributes are set by the calling function.
 
         Args:
@@ -2595,7 +2611,7 @@ class GroupedAnalysis:
             ):
                 pbar.update()
         return
-    
+
     def save_smearedcohp_all(
         self,
         coxx_type: Literal["COHP", "COBI"] = "COHP",
@@ -2628,7 +2644,7 @@ class GroupedAnalysis:
         dostype: Literal["vasp", "lso", "lobster"] = "vasp",
         output_dir: PathLike | str = ".",
     ):
-        """Calls process_comp_savedos_perspecies for all composition using MultiProcess, which saves the 
+        """Calls process_comp_savedos_perspecies for all composition using MultiProcess, which saves the
         DOS per (A/B1/B2/X) to json files.
 
         Args:
@@ -2642,7 +2658,9 @@ class GroupedAnalysis:
             total=len(self.analysis_list), desc=f"Saving DOS to JSON for {dostype}-DOS"
         ) as pbar:
             for _, result in enumerate(
-                pool.imap_unordered(self.process_comp_savedos_perspecies, self.analysis_list)
+                pool.imap_unordered(
+                    self.process_comp_savedos_perspecies, self.analysis_list
+                )
             ):
                 # recordlist.append(result)
                 # if len(recordlist)%50 == 0:
@@ -2655,13 +2673,13 @@ class GroupedAnalysis:
         dostype: Literal["vasp", "lso", "lobster"] = "vasp",
         output_dir: PathLike | str = ".",
     ):
-        """Calls process_comp_savedos_persite for all composition using MultiProcess, 
+        """Calls process_comp_savedos_persite for all composition using MultiProcess,
         which saves the DOS site resolved to json files.
 
         Args:
             dostype (Literal[&quot;vasp&quot;, &quot;lso&quot;, &quot;lobster&quot;], optional): which DOSCAR type to parse. Defaults to "vasp".
             output_dir (PathLike | str, optional): where to store the json files. Defaults to ".".
-        """       
+        """
         self.dostype = dostype
         self.output_dir = output_dir
 
@@ -2829,7 +2847,7 @@ class GroupedAnalysis:
     ):
         """Combines the DataFrames containing basic, bandedge, lobster output, and structural data into a single DataFrame.
         From the bandedge data only the 'combined' spin channel data is retained.
-        
+
         Additional functionality isolates data on the main contributing bands from the band edges which was used for plotting purposes.
 
         Args:
@@ -2840,6 +2858,7 @@ class GroupedAnalysis:
             add_transitions (bool, optional): Whether to add seperate description of main orbitals involved in transition. Defaults to True.
             include_x (bool, optional): Whether to include the X-site contributions to the transition. Defaults to True.
         """
+
         def determineTransitionBands(combined_df: pd.DataFrame, include_x: bool = True):
             # figure out which site contributes most to VBM and CBM
             # then get the orbital character of that site
@@ -2931,7 +2950,7 @@ class GroupedAnalysis:
 
     @staticmethod
     def remove_duplicates(
-        combdf: pd.DataFrame,
+        combineddf: pd.DataFrame,
         banddf: pd.DataFrame,
         lobsterdf: pd.DataFrame,
         structuraldf: pd.DataFrame,
@@ -2951,14 +2970,14 @@ class GroupedAnalysis:
             structuraldf (pd.DataFrame): DataFrame of structural data
             basicdf (pd.DataFrame): DataFrame of basic/input data
             to_sim_overview (PathLike | None, optional): Path to overview of reworked candidate list
-                                                        if None is given this step is fixed and only duplicates are removed. 
+                                                        if None is given this step is fixed and only duplicates are removed.
                                                         Defaults to None.
             save_dir (PathLike | None, optional): Path to where DataFrames without duplicates should be stores. Defaults to None.
 
         Returns:
             5 * DataFrame: Each input DataFrame with unwanted entries removed.
         """
-
+        combdf = combineddf.copy()
         combdf["element.B2"] = combdf["element.B2"].fillna("Vac")
         combdf["el_set"] = combdf.apply(
             lambda row: {row["element.B1"], row["element.B2"], row["element.X"]}, axis=1
@@ -2993,12 +3012,12 @@ class GroupedAnalysis:
             structuraldf.loc[index_nodupl].to_csv(
                 f'{data_output_dir}/HDP_StructuralInfo_{time.strftime("%y%m%d")}.csv'
             )
-            combdf.to_csv(
+            combineddf.loc[index_nodupl].to_csv(
                 data_output_dir / f"HDP_CombinedInfo_{time.strftime("%y%m%d")}.csv"
             )
 
         return (
-            combdf,
+            combineddf.loc[index_nodupl],
             banddf.loc[index_nodupl],
             lobsterdf.loc[index_nodupl],
             structuraldf.loc[index_nodupl],
@@ -3025,10 +3044,10 @@ anal = SingleHDPanalysis(testComp[0], p.LedgerDF[testComp[0].CompID])
 
 
 if __name__ == "__main__":
-    data_output_dir = Path("/home/lwalterb/hdp_project/NewWF_Analysis/AprilAnalysis")
+    data_output_dir = Path("./AprilAnalysis")
     # print('bye')
     g = GroupedAnalysis(p, testing=0)
-# 
+    #
     print("starting basis selection")
     g.select_lobbasis(
         saved_qualityoverview=data_output_dir / "HDP_lobqual_overview_260417.csv"
@@ -3048,14 +3067,13 @@ if __name__ == "__main__":
     # smeared_dos_output.mkdir(exist_ok=True)
     # g.save_dosjsons_smeared(dostype='lso',smearing_width=0.05,output_dir=smeared_dos_output)
 
-    smeared_cohp_output = data_output_dir / "COHP_SMEARED"
-    smeared_cohp_output.mkdir(exist_ok=True)
-    g.save_smearedcohp_all(coxx_type='COHP',smearing_width=0.05, output_dir=smeared_cohp_output)
+    # smeared_cohp_output = data_output_dir / "COHP_SMEARED"
+    # smeared_cohp_output.mkdir(exist_ok=True)
+    # g.save_smearedcohp_all(coxx_type='COHP',smearing_width=0.05, output_dir=smeared_cohp_output)
 
-    smeared_cobi_output = data_output_dir / "COBI_SMEARED"
-    smeared_cobi_output.mkdir(exist_ok=True)
-    g.save_smearedcohp_all(coxx_type='COHP',smearing_width=0.05, output_dir=smeared_cobi_output)
-
+    # smeared_cobi_output = data_output_dir / "COBI_SMEARED"
+    # smeared_cobi_output.mkdir(exist_ok=True)
+    # g.save_smearedcohp_all(coxx_type='COBI',smearing_width=0.05, output_dir=smeared_cobi_output)
 
     # ####Recompile dfs
     # dbasic = g.get_basic_data()
@@ -3068,27 +3086,30 @@ if __name__ == "__main__":
     # dstuc.to_csv(f'{data_output_dir}/HDP_StructuralInfo_{time.strftime("%y%m%d")}.csv')
 
     # ####read previous data in stead of collecting
-    dbasic = pd.read_csv(data_output_dir/'HDP_BasicInfo_260417.csv',index_col=0)
-    dlobster = pd.read_csv(data_output_dir/'HDP_LobsterInfo_260417.csv',index_col=0)
-    dband = pd.read_csv(data_output_dir/'HDP_bandedgeInfo_lsodos_260417.csv',index_col=[0,1])
-    dstuc = pd.read_csv(data_output_dir/'HDP_StructuralInfo_260417.csv',index_col=0)
+    dbasic = pd.read_csv(data_output_dir / "HDP_BasicInfo_260417.csv", index_col=0)
+    dlobster = pd.read_csv(data_output_dir / "HDP_LobsterInfo_260417.csv", index_col=0)
+    dband = pd.read_csv(
+        data_output_dir / "HDP_bandedgeInfo_lsodos_260417.csv", index_col=[0, 1]
+    )
+    dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo_260417.csv", index_col=0)
 
     # #####combine dataframes into one single df
     dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic)
+    dcomb.to_csv(data_output_dir / "HDP_CombinedInfo_260417.csv")
     #
-    # nodup_output = data_output_dir / "HDP_Data_NoDups"
-    # nodup_output.mkdir(exist_ok=True)
-    # GroupedAnalysis.remove_duplicates(
-    #     combdf=dcomb,
-    #     banddf=dband,
-    #     lobsterdf=dlobster,
-    #     structuraldf=dstuc,
-    #     basicdf=dbasic,
-    #     to_sim_overview=Path(
-    #         "/home/lwalterb/hdp_project/NewWF_Analysis/ToSimulateComps.csv"
-    #     ),
-    #     save_dir=nodup_output,
-    # )
+    nodup_output = data_output_dir / "HDP_Data_NoDups"
+    nodup_output.mkdir(exist_ok=True)
+    GroupedAnalysis.remove_duplicates(
+        combineddf=dcomb,
+        banddf=dband,
+        lobsterdf=dlobster,
+        structuraldf=dstuc,
+        basicdf=dbasic,
+        to_sim_overview=Path(
+            "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/ToSimulateComps.csv"
+        ),
+        save_dir=nodup_output,
+    )
 
     # outputcohps = Path(data_output_dir)/"ParsedCOHPs"
     # outputcohps.mkdir(exist_ok=True)
@@ -3103,8 +3124,3 @@ if __name__ == "__main__":
     # outputdos = Path(data_output_dir)/"parsedLSODOS"
     # outputdos.mkdir(exist_ok=True)
     # g.save_dosjsons_persite_all('lso',outputdos)
-
-
-
-
-
