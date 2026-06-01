@@ -497,7 +497,9 @@ class compound:
         return nbands
 
 
-def initialize_compounds(file: str = "/home/lucw/ht_programfiles/testinput_larger") -> list[compound]:
+def initialize_compounds(
+    file: str = "/home/lucw/ht_programfiles/testinput_larger",
+) -> list[compound]:
     """
     This function will take the input file, create an compound object for each entry, create the directory and write the general info file
     The input file shoud be parsed as follows "ABBX, 'A', 'B1', nB1, 'B2', nB2, 'X', where '*' indicates the chemical symbol of the element,
