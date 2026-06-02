@@ -1069,6 +1069,22 @@ class ProcessLedger:
 
 
 class GeneralJob:
+    """Base class for workflow job execution.
+
+    GeneralJob wraps a single workflow step for a specific compound and ledger entry.
+    It provides common behavior for job initialization, INCAR/lobsterin writing, and
+    SLURM submission file generation. Subclasses implement job-specific run logic.
+
+    Attributes:
+        AssignedServer (str): SLURM partition or host assignment string.
+        AssignedCompName (str): Compound identifier used in logging and paths.
+        AssignedComp (compound): Compound object for this job.
+        ledger (ProcessLedger): Ledger instance tracking workflow state.
+        JobName (str): Name of the current job step as defined in the job settings.
+        JobBasics (dict): Standard job settings loaded from the ledger JSON file.
+        JobID (int): Unique numeric identifier for this run instance.
+        JobSpecifics (dict): Stored per-job override settings from the ledger.
+    """
 
     def __init__(
         self,
@@ -1106,7 +1122,7 @@ class GeneralJob:
         This function will take the standard incar from JobSettings JSON file, and any extra inputs in the ProcessLedger
         put it together and write it to a file. It will automatically save to 'INCAR' for 'job_type:VASP' and lobsterin for 'job_type:LOBSTER'
 
-        for any other job_type it will take ['name'] from JobSettings JSON and output it to '{name}_INPUT'
+        for any other job_type it will take ['name'] from JobSettings JSON and save the inputs to '{name}_INPUT'
         """
         incar = self.JobBasics["std_incar"]
         incar.update(self.JobSpecifics["IncarExtras"])
@@ -1123,13 +1139,7 @@ class GeneralJob:
 
         with open(filename, "w") as f:
             for key, val in incar.items():
-                # try:
-                #     literal_val = eval(val)
-                # except Exception as exc:
-                #     print(f"tried to eval: {val} as literal val but got exception {exc}")
-                #     newline = joiner.join([str(key),str(val)]) + '\n'
-                #     f.write(newline)
-                # else:
+
                 if type(val) == list:
                     for singleval in val:
                         newline = joiner.join([str(key), str(singleval)]) + "\n"
@@ -1141,18 +1151,28 @@ class GeneralJob:
         return incar
 
     def WriteSubmission(self, LogFileExtra=""):
+        """Write the SLURM submission script for this job.
 
+        The generated submission file is named based on the job type (e.g. "vasp.sub" or "lobster.sub").
+        The method also records the standard output and error filenames so the job can be monitored later.
+
+        Args:
+            LogFileExtra (str, optional): Suffix to append to log and error filenames.
+        """
+        # Set filenames for submission, log, and error files
         filename = self.JobBasics["job_type"].lower() + ".sub"
         self.SubFile = filename
         self.LogFile = f"log_{self.JobID}_{self.AssignedCompName}{LogFileExtra}"
         self.ErrorFile = f"error_{self.JobID}_{self.AssignedCompName}{LogFileExtra}"
-        ##extract nnodes and potentially time from JobSettings JSON
+        
+        # Extract nnodes and potentially time from JobSettings JSON
         nnodes = self.JobBasics["nnodes"]
         if "max_time" in self.JobBasics.keys():
             max_time = self.JobBasics["max_time"]
         else:
             max_time = f"0{nnodes}:00:00"
 
+        # Set modules and slurm commands
         if self.JobBasics["job_type"].upper() == "VASP":
             module = "module load vasp/6.3.0"
             runcommand = "mpirun vasp_std"
@@ -1164,6 +1184,7 @@ class GeneralJob:
                 f"Could not write submission script for unknown job_type: {self.JobBasics['job_type']}"
             )
 
+        # Write the submission file line by line :-0
         with open(filename, "w") as file:
             file.write(f"#!/bin/bash \n#SBATCH --time={max_time}\n")
             file.write(
@@ -1213,6 +1234,12 @@ class GeneralJob:
 
 
 class SimpleVasp(GeneralJob):
+    """Base class for VASP-based job steps.
+
+    SimpleVasp extends GeneralJob with VASP-specific helpers for algorithm cycling,
+    SCF completion checks, input preparation, and result extraction.
+    """
+
     def __init__(
         self,
         ledger: ProcessLedger,
@@ -1227,7 +1254,7 @@ class SimpleVasp(GeneralJob):
 
     def CycleAlgos(self):
         """This function will update the chosen algorithm for a VASP calculation based on the available algorithms
-        in GeneralJob.AllowedAlgos.
+        in self.AllowedAlgos.
 
         If the "IncarExtras" in the ProcessLedger does not have an ALGO specified for the current step it will check the previous step for that keyword.
             If it is specified it there it will update the "IncarExtras" for the current step with that ALGO
@@ -1371,6 +1398,14 @@ class SimpleVasp(GeneralJob):
         return
 
     def ExtractEtot(self, file="OSZICAR"):
+        """Extract the total energy from an OSZICAR file.
+
+        Args:
+            file (str, optional): OSZICAR-like file to parse. Defaults to "OSZICAR".
+
+        Returns:
+            float | list[float]: Total energy value(s) extracted from the file.
+        """
         # os.chdir(self.JobSpecifics['JobPath'])
         p = subprocess.run(
             ["awk", "/F=/ {print $5}", file], stdout=subprocess.PIPE, text=True
@@ -1384,6 +1419,14 @@ class SimpleVasp(GeneralJob):
         return Eout
 
     def ExtractMAGtot(self, file="OSZICAR"):
+        """Extract the total magnetization from an OSZICAR file.
+
+        Args:
+            file (str, optional): OSZICAR-like file to parse. Defaults to "OSZICAR".
+
+        Returns:
+            float | list[float]: Total magnetic moment value(s) extracted from the file.
+        """
         # os.chdir(self.JobSpecifics['JobPath'])
         p = subprocess.run(
             ["awk", "/F=/ {print $NF}", file], stdout=subprocess.PIPE, text=True
@@ -1397,6 +1440,18 @@ class SimpleVasp(GeneralJob):
         return MAGMOM
 
     def UsePOTCARENMAX(self, MultFactor: float = 1.2, MinValue: int = 350):
+        """Set ENCUT in the INCAR extras based on POTCAR ENMAX.
+
+        Reads the maximum ENMAX value from the POTCAR and scales it by MultFactor.
+        A minimum ENCUT value is enforced to avoid too-low cutoffs.
+
+        Args:
+            MultFactor (float, optional): Multiplicative scaling factor for ENMAX. Defaults to 1.2.
+            MinValue (int, optional): Minimum allowed ENCUT. Defaults to 350.
+
+        Returns:
+            float: The selected ENCUT value.
+        """
 
         # os.chdir(self.JobSpecifics["JobPath"])
         get_enmax = subprocess.run(
@@ -1416,6 +1471,14 @@ class SimpleVasp(GeneralJob):
         return ENCUT
 
     def Run(self):
+        """Run a VASP job, check SCF convergence, and update ledger state.
+
+        This method writes the INCAR file, submits the VASP job, and uses the SCF
+        completion helper to determine whether the run succeeded, failed, or needs retries.
+
+        Returns:
+            str: Status indicator such as "succesfull", "convergence_failed", "error", or "run_failed".
+        """
         os.chdir(self.JobSpecifics["JobPath"])
 
         self.WriteIncar()
@@ -1465,6 +1528,12 @@ class SimpleVasp(GeneralJob):
 
 
 class Relaxation(SimpleVasp):
+    """VASP relaxation job step with adaptive correction logic.
+
+    Relaxation extends SimpleVasp by using frozen-core POTCARs, updating ENCUT,
+    checking for structural changes, and handling restart conditions.
+    """
+
     def __init__(
         self,
         ledger: ProcessLedger,
@@ -1540,6 +1609,15 @@ class Relaxation(SimpleVasp):
         return bool(zbrent_encounters)
 
     def Run(self):
+        """Run the relaxation job and apply adaptive recovery strategies.
+
+        This method submits the relaxation calculation, checks convergence,
+        saves the relaxed CONTCAR on success, and updates INCAR settings if the
+        relaxation fails or requires restart handling.
+
+        Returns:
+            str: Run status such as "relaxed", "slurm", or "relaxation_failed".
+        """
 
         os.chdir(self.JobSpecifics["JobPath"])
 
@@ -1592,7 +1670,7 @@ class Relaxation(SimpleVasp):
             )
 
         if contcarrestart:
-            # special flag for VASP telling you to restart from CONTCAR with smaller EDIFF
+            # special flag from VASP telling you to restart from CONTCAR with smaller EDIFF
             os.system("cp CONTCAR POSCAR")
             newEDIFF = incar["EDIFF"] / 10
             self.JobSpecifics["IncarExtras"].update({"EDIFF": newEDIFF})
@@ -1610,6 +1688,12 @@ class Relaxation(SimpleVasp):
 
 
 class SpinStateScan(SimpleVasp):
+    """VASP job step that scans magnetic spin initializations.
+
+    SpinStateScan generates multiple MAGMOM initializations for B-site spin states,
+    runs each combination, and records the lowest-energy converged result.
+    """
+
     def __init__(
         self,
         ledger: ProcessLedger,
@@ -1621,6 +1705,11 @@ class SpinStateScan(SimpleVasp):
         self.AllowedAlgos = ["N", "F", "VF", "A", "S"]
 
     def GetSpinCombos(self):
+        """Build a list of spin moment combinations to test for the B-site cations.
+
+        Returns:
+            list[list[float | str]]: Requested MAGMOM initializations for B1 and B2.
+        """
         b1HS, b1LS = self.AssignedComp.get_spinstate("B1")
         if b1HS == b1LS:
             B1s = [b1HS]
@@ -1650,6 +1739,12 @@ class SpinStateScan(SimpleVasp):
         return combos
 
     def Run(self):
+        """Run multiple spin-initialized VASP jobs and select the best converged result.
+
+        Returns:
+            str: "good_run" if at least one converged spin scan succeeds, "convergence_failed" if not,
+                 or "slurm" if the submission itself fails.
+        """
 
         os.chdir(self.JobSpecifics["JobPath"])
 
@@ -1742,6 +1837,12 @@ class SpinStateScan(SimpleVasp):
 
 
 class PreLobster(SimpleVasp):
+    """Prepares and executes the final VASP run before LOBSTER projection.
+
+    PreLobster ensures the VASP calculation uses enough bands for the planned
+    LOBSTER projection and updates INCAR settings accordingly.
+    """
+
     def __init__(
         self,
         ledger: ProcessLedger,
@@ -1756,6 +1857,11 @@ class PreLobster(SimpleVasp):
             self.AllowedAlgos = ["N", "VF", "F", "D", "A", "S"]
 
     def Run(self):
+        """Run the final pre-LOBSTER VASP step and ensure NBANDS is set correctly.
+
+        Returns:
+            str: "good_run", "convergence_failed", "error", or "run_failed".
+        """
         os.chdir(self.JobSpecifics["JobPath"])
         ##Preparation steps
         self.PrepareVASPRun()  # assures KPOINTS, POSCAR, and POTCAR are there
@@ -1811,6 +1917,12 @@ class PreLobster(SimpleVasp):
 
 
 class SimpleLobster(GeneralJob):
+    """LOBSTER projection job step for chemical bonding analysis.
+
+    SimpleLobster prepares lobsterin settings, manages basis-function combinations,
+    and runs LOBSTER in separate directories while checking spillings and overlaps.
+    """
+
     def __init__(
         self,
         ledger: ProcessLedger,
@@ -1821,8 +1933,16 @@ class SimpleLobster(GeneralJob):
         super().__init__(ledger, comp, JobName, AssignedServer)
 
     def ChangeCOHPErange(self, use_file="DOSCAR"):
+        """Adjust LOBSTER energy window settings based on the DOSCAR energy range.
+        Also adds COHPgenerator keyword twice for each B-X combination to the IncarExtras
 
-        # os.chdir(self.JobSpecifics["JobPath"])
+        Args:
+            use_file (str, optional): DOSCAR-like file to parse. Defaults to "DOSCAR".
+
+        Returns:
+            tuple[float, float]: COHP start and end energies.
+        """
+
 
         with open(use_file, "r") as file:
             lines = file.readlines()
@@ -1856,6 +1976,12 @@ class SimpleLobster(GeneralJob):
         return values[1], values[0]
 
     def add_basisfunctions(self, which="basis0"):
+        """Append basis function definitions for a named LOBSTER basis set to lobsterin.
+
+        Args:
+            which (str, optional): Basis combination name from get_all_basis_combos().
+                Defaults to "basis0".
+        """
         # os.chdir(self.JobSpecifics['JobPath'])
         all_basis = self.AssignedComp.get_all_basis_combos()
         with open("lobsterin", "a") as file:
@@ -1865,6 +1991,15 @@ class SimpleLobster(GeneralJob):
         return
 
     def check_charge_spilling(self, max_val=3):
+        """Check whether LOBSTER charge spilling exceeds a threshold.
+
+        Args:
+            max_val (int, optional): Maximum allowed absolute charge spilling percent.
+                Defaults to 3.
+
+        Returns:
+            bool: True if charge spilling is above the threshold.
+        """
 
         awk_spil = subprocess.run(
             ["awk", "/abs. charge spilling/ {print $NF}", "lobsterout"],
@@ -1881,6 +2016,14 @@ class SimpleLobster(GeneralJob):
         return bad_spilling
 
     def check_overlaps(self, max_val=0.05):
+        """Check LOBSTER band overlap deviations against a tolerance.
+
+        Args:
+            max_val (float, optional): Maximum allowed overlap deviation value. Defaults to 0.05.
+
+        Returns:
+            bool: True if any overlap deviation exceeds the tolerance.
+        """
 
         if os.path.exists("bandOverlaps.lobster"):
             awk_maxDev = subprocess.run(
@@ -1901,6 +2044,11 @@ class SimpleLobster(GeneralJob):
         return False
 
     def Run(self):
+        """Run the LOBSTER projection across available basis-function combinations.
+
+        Returns:
+            str: "good_run" if one basis combination succeeds, "slurm" if there was an issue with the submission, otherwise "no_good_run".
+        """
         os.chdir(self.JobSpecifics["JobPath"])
         self.ChangeCOHPErange()
         os.system("export OMP_NUM_THREADS=2")
@@ -1941,25 +2089,17 @@ class SimpleLobster(GeneralJob):
             os.system("ln -f ../OSZICAR .")
             self.WriteIncar()
             self.add_basisfunctions(set_number)
-            # self.WriteSubmission()
+            self.WriteSubmission()
 
-            # slurm_exit = submit_and_wait(self.SubFile)
-            #
-            # if slurm_exit != "COMPLETED":
-            # some weird error, save slurm exit code to the completion field in the ledger
-            # self.ledger.SetSingleValue(self.AssignedComp, self.JobName, Field="completed", value=f"slurm:{slurm_exit}")
-            # return 'slurm'
             print(f"starting LOB for {self.AssignedCompName}")
-            with open("extralob.log", "w") as f:
-                subprocess.run(
-                    ["/home/lwalterb/Downloads/lobster-5.1.1/lobster-5.1.1"],
-                    shell=True,
-                    stderr=subprocess.STDOUT,
-                    stdout=f,
-                    check=True,
-                )
-            # time.sleep(40)
+            slurm_exit = submit_and_wait(self.SubFile)
+            
+            if slurm_exit != "COMPLETED":
+                #some weird error, save slurm exit code to the completion field in the ledger
+                self.ledger.SetSingleValue(self.AssignedComp, self.JobName, Field="completed", value=f"slurm:{slurm_exit}")
+                return 'slurm'
 
+            # Check projection quality parameters
             spil_restart = self.check_charge_spilling()
             over_restart = self.check_overlaps()
 
