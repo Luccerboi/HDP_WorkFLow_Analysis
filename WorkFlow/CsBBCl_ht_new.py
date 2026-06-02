@@ -123,7 +123,7 @@ for Z, symbol in enumerate(chemical_symbols):
     atomic_numbers[symbol] = Z
 
 atomic_spinstates = pd.read_csv(
-    "~/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/UnpairedSpins.csv",
+    "./assets/UnpairedSpins.csv",
     index_col=[0, 1],
     skipinitialspace=True,
 )
@@ -326,13 +326,12 @@ class compound:
                                 This option is specifically used for the relaxation step to improve stability
         """
         if use_frozen:
-            LUTpath = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/potLUT"
+            LUTpath = "./assets/potLUT"
         else:
-            LUTpath = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/potLUT_nofrozen"
+            LUTpath = "./assets/potLUT_nofrozen"
 
         PPpath = "/home/lucw/VASP-PAW-pseudo/potpaw_PBE.64/"
         if os.path.isfile("POTCAR") and write_file:
-            # print('POTCAR encountered, will be overwritten...')
             os.system("rm POTCAR")
 
         potcar_list = []
@@ -340,7 +339,6 @@ class compound:
             # print(el)
             if el == "Vac":
                 continue
-            # grep_proc = subprocess.Popen(["grep", el, LUTpath], stdout=subprocess.PIPE, text=True)
             awk_proc = subprocess.Popen(
                 ["awk", "/%s\t/{print $2}" % (el), LUTpath],
                 stdout=subprocess.PIPE,
@@ -366,9 +364,9 @@ class compound:
         """
 
         basisfile = (
-            f"/home/lwalterb/hdp_project/ht_programfiles/BASIS_PBE_64_{basis}.yaml"
+            f"./assests/BASIS_PBE_64_{basis}.yaml"
         )
-        LUTpath = "/home/lwalterb/hdp_project/ht_programfiles/potLUT_nofrozen"
+        LUTpath = "./assets/potLUT_nofrozen"
 
         with open(LUTpath, "rt") as f:
             LUTlines = f.readlines()
@@ -387,20 +385,12 @@ class compound:
                 len(potLUTline) == 1
             ), f"Looking up the required POTCAR fo r{el} returned multilple options: {potLUTline}"
             potname = potLUTline[0].strip("\n").strip().split("\t")[1]
-            # print(potname)
 
             basisline = [line for line in basislines if f"{potname}:" in line]
             assert (
                 len(basisline) == 1
             ), f"Looking up the required LOBSTER basis for {potname} returned multilple options: {basisline}"
             basisfuncs = basisline[0].strip("\n").strip().split(":")[1]
-            # print(basisfuncs)
-
-            # awk_bases = subprocess.run(['awk', '-F:', '/%s:/ {print $2}'%(potname), basisfile], stdout=subprocess.PIPE, text = True)
-            # print(awk_bases.stdout.strip())
-            # basisfuncs = awk_bases.stdout.strip()
-            # if '\n' in basisfuncs:
-            #     basisfuncs = basisfuncs.split('\n')[0]
 
             basis_dict.update({el: basisfuncs})
 
@@ -498,7 +488,7 @@ class compound:
 
 
 def initialize_compounds(
-    file: str = "/home/lucw/ht_programfiles/testinput_larger",
+    file: str = "./testinput",
 ) -> list[compound]:
     """
     This function will take the input file, create an compound object for each entry, create the directory and write the general info file

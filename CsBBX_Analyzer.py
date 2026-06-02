@@ -88,7 +88,6 @@ irs_full = (
     .dropna(axis=0)
 )
 irs_full = irs_full.drop([1, 1])
-##Seperate periodic table into relevant charges
 
 
 class SingleHDPanalysis:

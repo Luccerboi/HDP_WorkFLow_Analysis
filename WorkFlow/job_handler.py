@@ -1,5 +1,3 @@
-#!/software/compilers/intel/AIToolKit/intelpython/latest/bin/python3
-
 import numpy as np
 import pandas as pd
 import os
@@ -14,9 +12,11 @@ def submit_and_wait(submission="vasp.sub"):
     This function will submit vasp.sub to SLURM an retrieve the given job ID.
     It will then go on to check the status of this job every 30 seconds,
     once the job completes, fails, or is canceled it will return
-    INPUTS:
+    Args:
         submission(str): the filename of the submission scripts, defaults to "vasp.sub"
-    OUTPUTS: (str): the function returns the final state of the calculation in SLURM, which should be COMPLETED
+    
+    Returns: 
+        (str): the function returns the final state of the calculation in SLURM, which should be COMPLETED
                 but it could also be FAILED or CANCELED
     """
     assert os.path.isfile(submission)
@@ -53,20 +53,26 @@ def submit_and_wait(submission="vasp.sub"):
     return state
 
 
-def check_availability():
-    """
-    This function will prompt SLURM to check how many nodes are available on CCP20 and CCP22
+def check_availability(
+    allowed_partitions: list[str] = ["ccp20", "ccp22"]
+) -> dict[str, int]:
+    """This function will prompt SLURM to check how many nodes are available on CCP20 and CCP22
     Based on the number of nodes idle for each of these it will return the number of nodes that are free per
-    cluster. The number of calculations is limited to assure others can still work on the clusters.
-    Inputs: None
-    Outputs:
-        overview[dict]:     a dictionary with 'key:server' 'val:number of available nodes'
+    cluster.
+
+    Args:
+        allowed_partitions (list[str], optional): list of partition names you want to consider for submitting jobs. Defaults to ['ccp20','ccp22'].
+
+    Returns:
+        dict[str,int]: dictionary containing with the available partitions as keys and number of idle nodes as values.
     """
     p1 = subprocess.Popen(
         ["sinfo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
+    partition_scan_string = "|".join(allowed_partitions)
+
     p2 = subprocess.Popen(
-        ["awk", '/ccp2/&&/idle/ {print $1 "   " $4}'],
+        ["awk", '/(%s)/&&/idle/ {print $1 "   " $4}'.format(partition_scan_string)],
         stdin=p1.stdout,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -75,7 +81,7 @@ def check_availability():
 
     out, _ = p2.communicate()
     if out == "":  # all nodes busy
-        return {"ccp20": 0, "ccp22": 0}
+        return {x: 0 for x in allowed_partitions}
 
     avail_ls = out.strip().split("\n")  # output of call line seperated
 
@@ -128,4 +134,3 @@ def check_scfcompletion(logfile, erroroutput="encounteredErrors.tmp"):
         # raise Exception("Unexpected value encountered when checking SCF convergence:{err}")
         return numstrings
     return scf_cycles
-
