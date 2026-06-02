@@ -6,11 +6,7 @@ import os
 import subprocess
 import time
 
-# import queue
 from math import floor, ceil
-import sys
-import CsBBCl_ht_new as ht
-from collections import deque
 
 
 def submit_and_wait(submission="vasp.sub"):
@@ -95,58 +91,6 @@ def check_availability():
     return overview
 
 
-def write_submission(comp, time="02:00:00", nnodes=4, submission="vasp.sub"):
-
-    with open(submission, "w") as file:
-        file.write(f"#!/bin/bash \n#SBATCH --time={time}\n")
-        file.write(
-            f"#SBATCH -p {comp.assigned_server} \n#SBATCH -N {nnodes} --exclusive --ntasks-per-node 32\n"
-        )
-
-        file.write(
-            f"#SBATCH -J {comp.calc_step}{comp.name} \n#SBATCH --output={comp.cur_log()}\n"
-        )
-        file.write(
-            f"#SBATCH --ntasks-per-core=1 \n#SBATCH --error={comp.cur_log()}\n\n"
-        )
-        file.write("module purge \nmodule load vasp/6.3.0 \n\nulimit -s unlimited\n")
-        file.write("startingtime=$(date)\n")
-        file.write(
-            "now=$(date +'%s') \nmpirun vasp_std \nendtime=$(date +'%s') \nduration=$(($endtime-$now)) \n"
-        )
-        file.write(
-            "echo 'Started on: ' $startingtime 'calculation ran for: ' $duration '[s]'\n"
-        )
-
-    return
-
-
-def write_lobsub(comp, time="01:00:00", nnodes=1, submission="lobster.sub"):
-
-    with open(submission, "w") as file:
-        file.write(f"#!/bin/bash \n#SBATCH --time={time}\n")
-        file.write(
-            f"#SBATCH -p {comp.assigned_server} \n#SBATCH -N {nnodes} --exclusive --ntasks-per-node 32\n"
-        )
-
-        file.write(
-            f"#SBATCH -J {comp.calc_step}{comp.name} \n#SBATCH --output={comp.cur_log()}\n"
-        )
-        file.write(
-            f"#SBATCH --ntasks-per-core=1 \n#SBATCH --error={comp.cur_log()}\n\n"
-        )
-        file.write("module purge \nmodule load lobster \n\nulimit -s unlimited\n")
-        file.write("startingtime=$(date)\n")
-        file.write(
-            "now=$(date +'%s') \n/software/codes/lobster/5.1.1/bin/lobster \nendtime=$(date +'%s') \nduration=$(($endtime-$now)) \n"
-        )
-        file.write(
-            "echo 'Started on: ' $startingtime 'calculation ran for: ' $duration '[s]'\n"
-        )
-
-    return
-
-
 def check_scfcompletion(logfile, erroroutput="encounteredErrors.tmp"):
     """This function will read in the logfile as it has been created by VASP. It will check for each electronic SCF cycle
     if the cycle has converged, if so it returns a 1 for that step, otherwise it will return 0. If an error is encountered
@@ -185,26 +129,3 @@ def check_scfcompletion(logfile, erroroutput="encounteredErrors.tmp"):
         return numstrings
     return scf_cycles
 
-
-class CompQueue(deque):
-    """This class creates a list like object with an extra function to rewrite the queue
-    according to the way i like it"""
-
-    def __init__(self, iterable, nsteps):
-        super().__init__(iterable)
-        self.nsteps = nsteps
-
-    def rewrite(self, full_list, banlist):
-        self.clear()
-        for n in np.arange(self.nsteps, 0, -1):
-            partiallist = ht.filter_calcstep(full_list, n)
-            # print(f'Rewriting queue with {len(partiallist)} compounds at step {n}\n')
-            for el in partiallist:
-                if el in banlist:
-                    continue
-                else:
-                    self.append(el)
-        return
-
-    def from_file(self, filename):
-        pass
