@@ -1,3 +1,8 @@
+""" 
+HTProcessLedger.py
+Contains the ProcessLedger class, which tracks Job completion and optional Input settings for High-Througput WorkFlow
+"""
+
 import numpy as np
 import pandas as pd  # type: ignore
 import os

@@ -4,7 +4,13 @@ import os
 import subprocess
 import time
 
-from math import floor, ceil
+# ============================================================================
+# Use python-dotenv to load settings from .env file.
+# ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+# Retrieve which partitions SLURM is allowd to use.
+allowed_partitions = eval(os.environ['ALLOWED_PARTITIONS'])
 
 
 def submit_and_wait(submission="vasp.sub"):
@@ -54,7 +60,7 @@ def submit_and_wait(submission="vasp.sub"):
 
 
 def check_availability(
-    allowed_partitions: list[str] = ["ccp20", "ccp22"]
+    allowed_partitions: list[str] = allowed_partitions
 ) -> dict[str, int]:
     """This function will prompt SLURM to check how many nodes are available on CCP20 and CCP22
     Based on the number of nodes idle for each of these it will return the number of nodes that are free per

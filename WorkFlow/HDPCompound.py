@@ -1,8 +1,22 @@
+""" 
+HDPCompound.py
+Contains the Compound class to create a Halide Double Perovskite Compound with some functionality to writing input files.
+"""
+
 import numpy as np
 import pandas as pd  # type: ignore
 import os
 import subprocess
 from pathlib import Path
+
+# ============================================================================
+# Use python-dotenv to load settings from .env file.
+# ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+# Retrieve to VASP PAW PseudoPotentials
+path_to_pseudo = os.environ['PATH_TO_PSEUDO']
+
 
 chemical_symbols = [
     "X",
@@ -309,7 +323,7 @@ class Compound:
             )
         return
 
-    def write_potcar(self, use_frozen: bool = False, write_file: bool = True):
+    def write_potcar(self, use_frozen: bool = False, write_file: bool = True, path_to_PAWs: str = path_to_pseudo):
         """This function concatonates the POTCARS for each species defined by the object compound. Which specific POTCAR is used for each
         species is determined by potLUT (potential Look Up Table).
         If any species is given that is not present in the potLUT this function will fail
@@ -323,7 +337,7 @@ class Compound:
         else:
             LUTpath = "./assets/potLUT_nofrozen"
 
-        PPpath = "/home/lucw/VASP-PAW-pseudo/potpaw_PBE.64/"
+        PPpath = path_to_PAWs
         if os.path.isfile("POTCAR") and write_file:
             os.system("rm POTCAR")
 

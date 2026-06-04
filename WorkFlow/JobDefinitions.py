@@ -11,6 +11,17 @@ import time
 import subprocess
 import json
 
+# ============================================================================
+# Use python-dotenv to load settings from .env file.
+# ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+# Retrieve to VASP PAW PseudoPotentials
+vasp_command = os.environ['VASP_COMMAND']
+lobster_command = os.environ['LOBSTER_COMMAND']
+
+
+
 class GeneralJob:
     """Base class for workflow job execution.
 
@@ -34,7 +45,7 @@ class GeneralJob:
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         assert (
             JobName in ledger.Jobs
@@ -93,7 +104,7 @@ class GeneralJob:
 
         return incar
 
-    def WriteSubmission(self, LogFileExtra=""):
+    def WriteSubmission(self, LogFileExtra="", vasp_command = vasp_command, lobster_command = lobster_command):
         """Write the SLURM submission script for this job.
 
         The generated submission file is named based on the job type (e.g. "vasp.sub" or "lobster.sub").
@@ -118,10 +129,10 @@ class GeneralJob:
         # Set modules and slurm commands
         if self.JobBasics["job_type"].upper() == "VASP":
             module = "module load vasp/6.3.0"
-            runcommand = "mpirun vasp_std"
+            runcommand = vasp_command
         elif self.JobBasics["job_type"].upper() == "LOBSTER":
             module = "module load lobster"
-            runcommand = "lobster"
+            runcommand = lobster_command
         else:
             raise ModuleNotFoundError(
                 f"Could not write submission script for unknown job_type: {self.JobBasics['job_type']}"
@@ -188,7 +199,7 @@ class SimpleVasp(GeneralJob):
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         super().__init__(ledger, comp, JobName, AssignedServer)
 
@@ -482,7 +493,7 @@ class Relaxation(SimpleVasp):
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         super().__init__(ledger, comp, JobName, AssignedServer)
         self.AllowedAlgos = ["N", "A", "D", "F", "VF", "S"]
@@ -642,7 +653,7 @@ class SpinStateScan(SimpleVasp):
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         super().__init__(ledger, comp, JobName, AssignedServer)
         self.AllowedAlgos = ["N", "F", "VF", "A", "S"]
@@ -791,7 +802,7 @@ class PreLobster(SimpleVasp):
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         super().__init__(ledger, comp, JobName, AssignedServer)
         if JobName == "4HSE":
@@ -871,7 +882,7 @@ class SimpleLobster(GeneralJob):
         ledger: ProcessLedger,
         comp: Compound,
         JobName: str = "",
-        AssignedServer: str = "ccp20,ccp22",
+        AssignedServer: str = "partition1,partition2",
     ):
         super().__init__(ledger, comp, JobName, AssignedServer)
 
@@ -995,9 +1006,6 @@ class SimpleLobster(GeneralJob):
         os.chdir(self.JobSpecifics["JobPath"])
         self.ChangeCOHPErange()
         os.system("export OMP_NUM_THREADS=2")
-        # self.WriteIncar()
-        # self.WriteSubmission()
-        # print(self.ledger)
         self.ledger.SetSingleValue(
             self.AssignedComp,
             self.JobName,

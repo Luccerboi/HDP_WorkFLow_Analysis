@@ -62,18 +62,22 @@ from pymatgen.util.typing import SpeciesLike
 
 warnings.filterwarnings("ignore")
 
-JobsFile = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/NewLobJobs.json"  # "~/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/NewLobJobs.json"
-InputCompsFile = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/ht_programfiles/AllCompsInput"
-DBlocation = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/AllCompsNewWF/"
-restart = False  # if True, the database will be deleted and reinitialized
-ledgerfile = "BAMadapted_NoCs6s.csv"  # name of the ledger file
+# ============================================================================
+# Use python-dotenv to load settings from .env file.
+# ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+JobsFile = os.environ['JOB_JSON_PATH']
+DBlocation = os.environ['DATABASE_PATH']
+ledgerfile = os.environ['PROCESSLEDGER_FILENAME']
 
+# Load ProcessLedger and regain the List of Compounds.
 p = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfile)
 loc = p.RestartLedger()
 _ = p.ReadFullLedger()
 
 
-###Code for caluclating tau-factor and generalized t-factor
+# Code for caluclating tau-factor and generalized t-factor
 irs_full = (
     fetch_ionic_radii(radius="ionic_radius")[
         [
@@ -3026,32 +3030,13 @@ class GroupedAnalysis:
         )
 
 
-print("hello0")
-comID = [
-    "1104_CsNaGdCl",
-    "1003_CsAgDyCl",
-    "1006_CsPtAmCl",
-    "1054_CsFeBaCl",
-    "1061_CsCuThCl",
-    "1935_CsNiNdF",
-    "1191_CsHgTaCl",
-    "2624_CsNbVacF",
-    "3738_CsCsDyF",
-]
-
-testComp = [x for x in loc if x.CompID in comID]
-anal_list = [SingleHDPanalysis(x, p.LedgerDF[x.CompID]) for x in testComp]
-anal = SingleHDPanalysis(testComp[0], p.LedgerDF[testComp[0].CompID])
-
-
 if __name__ == "__main__":
-    data_output_dir = Path("./AprilAnalysis")
-    # print('bye')
+    data_output_dir = Path("./AnalysisResults")
     g = GroupedAnalysis(p, testing=0)
     #
     print("starting basis selection")
     g.select_lobbasis(
-        saved_qualityoverview=data_output_dir / "HDP_lobqual_overview_260417.csv"
+        saved_qualityoverview=data_output_dir / "HDP_lobqual_overview_260509.csv"
     )
     # g.select_lobbasis(save_badprojections=True, saving_dir=data_output_dir)
 
@@ -3076,7 +3061,7 @@ if __name__ == "__main__":
     # smeared_cobi_output.mkdir(exist_ok=True)
     # g.save_smearedcohp_all(coxx_type='COBI',smearing_width=0.05, output_dir=smeared_cobi_output)
 
-    # ####Recompile dfs
+    # #Recompile dfs
     # dbasic = g.get_basic_data()
     # dbasic.to_csv(f'{data_output_dir}/HDP_BasicInfo_{time.strftime("%y%m%d")}.csv')
     # dlobster = g.get_lobster_data("Loewdin")
@@ -3086,31 +3071,31 @@ if __name__ == "__main__":
     # dstuc = g.get_structural_data()
     # dstuc.to_csv(f'{data_output_dir}/HDP_StructuralInfo_{time.strftime("%y%m%d")}.csv')
 
-    # ####read previous data in stead of collecting
-    dbasic = pd.read_csv(data_output_dir / "HDP_BasicInfo_260417.csv", index_col=0)
-    dlobster = pd.read_csv(data_output_dir / "HDP_LobsterInfo_260417.csv", index_col=0)
+    # #read previous data in stead of collecting
+    dbasic = pd.read_csv(data_output_dir / "HDP_BasicInfo_260510.csv", index_col=0)
+    dlobster = pd.read_csv(data_output_dir / "HDP_LobsterInfo_260510.csv", index_col=0)
     dband = pd.read_csv(
-        data_output_dir / "HDP_bandedgeInfo_lsodos_260417.csv", index_col=[0, 1]
+        data_output_dir / "HDP_bandedgeInfo_lsodos_260510.csv", index_col=[0, 1]
     )
-    dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo_260417.csv", index_col=0)
+    dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo_260510.csv", index_col=0)
 
     # #####combine dataframes into one single df
     dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic)
-    dcomb.to_csv(data_output_dir / "HDP_CombinedInfo_260417.csv")
-    #
-    nodup_output = data_output_dir / "HDP_Data_NoDups"
-    nodup_output.mkdir(exist_ok=True)
-    GroupedAnalysis.remove_duplicates(
-        combineddf=dcomb,
-        banddf=dband,
-        lobsterdf=dlobster,
-        structuraldf=dstuc,
-        basicdf=dbasic,
-        to_sim_overview=Path(
-            "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/ToSimulateComps.csv"
-        ),
-        save_dir=nodup_output,
-    )
+    
+    # Remove Duplicate entries
+    # nodup_output = data_output_dir / "HDP_Data_NoDups"
+    # nodup_output.mkdir(exist_ok=True)
+    # GroupedAnalysis.remove_duplicates(
+    #     combineddf=dcomb,
+    #     banddf=dband,
+    #     lobsterdf=dlobster,
+    #     structuraldf=dstuc,
+    #     basicdf=dbasic,
+    #     to_sim_overview=Path(
+    #         "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/ToSimulateComps.csv"
+    #     ),
+    #     save_dir=nodup_output,
+    # )
 
     # outputcohps = Path(data_output_dir)/"ParsedCOHPs"
     # outputcohps.mkdir(exist_ok=True)

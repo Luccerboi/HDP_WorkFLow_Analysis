@@ -18,26 +18,25 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # ============================================================================
-# CONFIGURATION VARIABLES
+# Use python-dotenv to load settings from .env file.
 # ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+JobsFile = os.environ['JOB_JSON_PATH']
+DBlocation = os.environ['DATABASE_PATH']
+ledgerfile = os.environ['PROCESSLEDGER_FILENAME']
+MAX_PROCS = os.environ['MAX_NUM_JOBS']
 
-# Path to the JSON file containing job specifications and parameters
-JobsFile = "/home/lwalterb/hdp_project/ht_programfiles/HDP_JOBS_v2507.json"
+# Load ProcessLedger and regain the List of Compounds.
+p = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfile)
+loc = p.RestartLedger()
+_ = p.ReadFullLedger()
 
-# Path to the input Compounds file used for initializing the database
-InputCompsFile = "/home/lwalterb/hdp_project/ht_programfiles/AllCompsInput"
-
-# Remote database location on the HPC cluster where calculations are stored
-DBlocation = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/AllCompsNewWF"
-
-# Set True to reset the database and start fresh (WARNING: will delete existing data)
+# ============================================================================
+# CHANGE ONLY IF YOU WANT TO DELETE ALL DATA AND RESTART DATABASE
+# ============================================================================
 restart = False
-
-# Name of the ledger file for tracking job progress and completion status
-ledgerfile = "BAMadapted_NoCs6s.csv"
-
-# Maximum number of jobs to process in parallel
-MAX_PROCS = 4
+InputCompsFile = 'AllCompsInput'
 
 def create_single_job(JobClass: str, ledger: ProcessLedger, comp: Compound, JobName: str, server="ccp20,ccp22"):
     """

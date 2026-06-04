@@ -8,17 +8,18 @@ import time
 import subprocess
 import pandas as pd
 
-from CsBBCl_ht_new import ProcessLedger
+from HTProcessLedger import ProcessLedger
 
 # ============================================================================
-# Configuration
+# Use python-dotenv to load settings from .env file.
 # ============================================================================
+from dotenv import load_dotenv
+load_dotenv()
+JOBS_FILE= os.environ['JOB_JSON_PATH']
+DB_LOCATION = os.environ['DATABASE_PATH']
+LEDGER_FILE = os.environ['PROCESSLEDGER_FILENAME']
+DEFAULT_USER = os.environ['DEFAULT)USERNAME']
 
-JOBS_FILE = "/home/lwalterb/hdp_project/ht_programfiles/HDP_JOBS_v2507.json"
-INPUT_COMPS_FILE = "/home/lwalterb/hdp_project/ht_programfiles/AllCompsInput"
-DB_LOCATION = "/home/lwalterb/RZ-Dienste/hpc-user/lwalterb/HDP_project/UTwente_backup/home/lucw/AllCompsNewWF"
-LEDGER_FILE = "BAMadapted_NoCs6s.csv"
-DEFAULT_USER = "lucw"
 
 
 def GetQueueLength(queue: dict) -> int:
