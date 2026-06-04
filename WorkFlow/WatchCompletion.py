@@ -14,25 +14,32 @@ from HTProcessLedger import ProcessLedger
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
-load_dotenv()
-JOBS_FILE= os.environ['JOB_JSON_PATH']
-DB_LOCATION = os.environ['DATABASE_PATH']
-LEDGER_FILE = os.environ['PROCESSLEDGER_FILENAME']
-DEFAULT_USER = os.environ['DEFAULT)USERNAME']
 
+load_dotenv()
+JOBS_FILE = os.environ["JOB_JSON_PATH"]
+DB_LOCATION = os.environ["DATABASE_PATH"]
+LEDGER_FILE = os.environ["PROCESSLEDGER_FILENAME"]
+DEFAULT_USER = os.environ["DEFAULT)USERNAME"]
 
 
 def GetQueueLength(queue: dict) -> int:
     """Return the total number of items in all job queues."""
     return sum(len(val) for val in queue.values())
 
+
 def print_errors() -> None:
     """Print compounds with intermediate errors in the current ledger overview."""
-    ledger = ProcessLedger(JOBS_FILE, StartPath=DB_LOCATION, ledger_filename=LEDGER_FILE)
+    ledger = ProcessLedger(
+        JOBS_FILE, StartPath=DB_LOCATION, ledger_filename=LEDGER_FILE
+    )
     overview = ledger.GetCompletionOverview()
 
-    status_columns = ['1Rel', '2Spins', '3Pre', '4HSE']
-    errors = overview[status_columns][((overview[status_columns] != "0") & (overview[status_columns] != "1")).any(axis=1)]
+    status_columns = ["1Rel", "2Spins", "3Pre", "4HSE"]
+    errors = overview[status_columns][
+        ((overview[status_columns] != "0") & (overview[status_columns] != "1")).any(
+            axis=1
+        )
+    ]
 
     print("Error summary for intermediate steps:")
     print(overview.loc[errors.index])
@@ -49,15 +56,20 @@ def renew_overview(queue: dict, overview: pd.DataFrame) -> pd.DataFrame:
         f"\t5LOB:\t {len(queue.get('5LOB', []))}\n"
     )
 
-    status_columns = ['1Rel', '2Spins', '3Pre', '4HSE']
-    errors = overview[status_columns][((overview[status_columns] != "0") & (overview[status_columns] != "1")).any(axis=1)]
-    lob_done = overview[((overview['5LOB'] == "-1") | (overview['5LOB'] == "1"))]
+    status_columns = ["1Rel", "2Spins", "3Pre", "4HSE"]
+    errors = overview[status_columns][
+        ((overview[status_columns] != "0") & (overview[status_columns] != "1")).any(
+            axis=1
+        )
+    ]
+    lob_done = overview[((overview["5LOB"] == "-1") | (overview["5LOB"] == "1"))]
 
     print(f"Fully completed comps:\t {len(lob_done)}")
     print(f"Erroneous comps:\t {len(errors)}\n")
     print("-" * 120)
 
     return overview
+
 
 def get_current_jobs(user: str = DEFAULT_USER) -> list[int]:
     """Return the list of currently running compound IDs from squeue output."""
@@ -71,13 +83,14 @@ def get_current_jobs(user: str = DEFAULT_USER) -> list[int]:
     comp_ids = []
     for line in result.stdout.strip().splitlines():
         for word in line.split():
-            if '_Cs' in word:
+            if "_Cs" in word:
                 try:
-                    comp_ids.append(int(word.split('_')[0]))
+                    comp_ids.append(int(word.split("_")[0]))
                 except ValueError:
                     continue
 
     return comp_ids
+
 
 def cycle_ovdf(overview: pd.DataFrame, offset: int = 0) -> pd.Series:
     """Return the overview row at the requested offset."""
@@ -86,12 +99,14 @@ def cycle_ovdf(overview: pd.DataFrame, offset: int = 0) -> pd.Series:
 
 def clear_screen() -> None:
     """Clear the terminal screen for a clean status display."""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 def main() -> None:
     """Run the watch loop that prints current queue and running job status."""
-    ledger = ProcessLedger(JOBS_FILE, StartPath=DB_LOCATION, ledger_filename=LEDGER_FILE)
+    ledger = ProcessLedger(
+        JOBS_FILE, StartPath=DB_LOCATION, ledger_filename=LEDGER_FILE
+    )
 
     try:
         while True:
@@ -121,7 +136,7 @@ def main() -> None:
 
             if running_jobs:
                 sample_index = max(0, running_jobs[-1] - 1005)
-                print(overview.iloc[sample_index:sample_index + 10])
+                print(overview.iloc[sample_index : sample_index + 10])
             else:
                 print("No running jobs detected.")
 

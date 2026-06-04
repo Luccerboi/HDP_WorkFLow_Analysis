@@ -1,4 +1,4 @@
-""" 
+"""
 HTProcessLedger.py
 Contains the ProcessLedger class, which tracks Job completion and optional Input settings for High-Througput WorkFlow
 """
@@ -21,7 +21,7 @@ def initialize_compounds(
     The input file shoud be parsed as follows "ABBX, 'A', 'B1', nB1, 'B2', nB2, 'X', where '*' indicates the chemical symbol of the element,
     and nB indicates the ionic state of the B site (integer)
 
-    Since starting a ProcessLedger adds a CompID to each composition, the input can have an additional input for CompID. 
+    Since starting a ProcessLedger adds a CompID to each composition, the input can have an additional input for CompID.
     If the input has length 8, this function will assign the final column as the CompID to facilitate reinitialization of the ProcessLedger
 
     The function will return list[Compound] containig all Compounds
@@ -69,6 +69,7 @@ class ProcessLedger:
     - Setting a Single Value in the Ledger
     - Restoring the Ledger information after critical error by scanning through the database directories.
     """
+
     def __init__(
         self,
         JobSettingsPath: str,
@@ -125,7 +126,7 @@ class ProcessLedger:
         Raises:
             Exception: when LOBSTER calculation misses a defined 'use_output_step'
         """
-           
+
         os.chdir(self.basepath)
 
         ##Setup dataframe for the ledger info
@@ -271,7 +272,6 @@ class ProcessLedger:
                         os.mkdir(calcdir_full)
                     except:
                         continue
-
 
                 else:
                     assert (
@@ -581,4 +581,3 @@ class ProcessLedger:
         with self.lock:
             ledger2.to_csv(self.LedgerFile)
         return
-

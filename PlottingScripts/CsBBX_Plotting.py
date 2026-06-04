@@ -1,6 +1,6 @@
-""" 
+"""
 CsBBX_Plotting.py
-Contains several plotting functions for the Halide Double Perovskite DataBase. 
+Contains several plotting functions for the Halide Double Perovskite DataBase.
 """
 
 import matplotlib.pyplot as plt
@@ -10,6 +10,7 @@ import numpy as np
 from pathlib import Path
 import time
 from os import PathLike
+
 
 def plot_bgmagmom(
     combined_info: pd.DataFrame,
@@ -467,7 +468,9 @@ def plot_icohpbg(
     }
 
     if use_transition:
-        assert "vbmorbchar" in combined_info.columns, "Tried to use transition, but combined_info DataFrame does not contain right information"
+        assert (
+            "vbmorbchar" in combined_info.columns
+        ), "Tried to use transition, but combined_info DataFrame does not contain right information"
         groupcolumn = "vbmorbchar"
         colorcolumn = "cbmorbchar"
         labelcolumn = "transition_bands"
@@ -759,7 +762,6 @@ def plot_icohpviolin_perspecies(
             print(f"No data for specie {specie}, skipping...")
             continue
 
-
         for xatom in combined_info["element.X"].unique():
             ax1 = icohpaxmap[xatom]
             ax2 = icobiaxmap[xatom]
@@ -1034,7 +1036,7 @@ basicinfo_csv = anal_dir / "HDP_BasicInfo_260510.csv"
 edgeinfo_csv = anal_dir / "HDP_bandedgeInfo_lsodos_260510.csv"
 lobinfo_csv = anal_dir / "HDP_LobsterInfo_260510.csv"
 combinfo_csv = anal_dir / "HDP_CombinedInfo_260510.csv"
-strucutralinfo_csv = anal_dir  / "HDP_StructuralInfo_260510.csv"
+strucutralinfo_csv = anal_dir / "HDP_StructuralInfo_260510.csv"
 dbasic = pd.read_csv(basicinfo_csv, index_col=0)
 dedge = pd.read_csv(edgeinfo_csv, index_col=[0, 1])
 dlob = pd.read_csv(lobinfo_csv, index_col=0)
@@ -1049,7 +1051,6 @@ dicsd = pd.read_csv(
 )
 
 if __name__ == "__main__":
-
 
     dcomps_perx = dcomb.groupby("element.X")
     for xatom in dcomps_perx.groups.keys():

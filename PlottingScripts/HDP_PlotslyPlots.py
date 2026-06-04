@@ -1,4 +1,4 @@
-""" 
+"""
 HDP_PlotslyPlots.py
 Contains several plotting functions based on Plotly. These plots were mainly used for the interactive UMAP explorer.
 Plotting functions for:
@@ -522,8 +522,6 @@ if __name__ == "__main__":
     saving_dir = Path("../AnalysisResults/hdp_plotly_plots")
     saving_dir.mkdir(exist_ok=True)
 
-
-
     col_dict = {
         "Element Counts": {"format": ".3g", "exclude_element": ["F", "Cl", "Br", "I"]},
         "Average -ICOHP": {
@@ -590,7 +588,7 @@ if __name__ == "__main__":
 
     for plot_type in col_dict.keys():
         ptable = plot_ptable(dcomb, color_value="Average Band Gap (eV)")
-        ptable.write_image(file=saving_dir/f"PTable_{plot_type.replace(" ","_")}.svg")
+        ptable.write_image(file=saving_dir / f"PTable_{plot_type.replace(" ","_")}.svg")
 
     # fig = plot_coxx(test_comp1, info_df_path, coxx_type='cohp')
     # fig[0].write_html(saving_dir/f'{test_comp1}_B1COHPplot.html')

@@ -1,8 +1,8 @@
-""" 
+"""
 CsBBX_Analyzer.py
 Contains the SingleHDPanalysis and GroupedAnalysis classes. SingleHDPanalysis is used to collect and analyse outputs from a single HDP compound.
 GroupedAnalysis is used to analyse all compounds from the DataBase.
-The main loop contains several calls to run analysis functions. 
+The main loop contains several calls to run analysis functions.
 """
 
 from HDPCompound import Compound
@@ -66,10 +66,11 @@ warnings.filterwarnings("ignore")
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
+
 load_dotenv()
-JobsFile = os.environ['JOB_JSON_PATH']
-DBlocation = os.environ['DATABASE_PATH']
-ledgerfile = os.environ['PROCESSLEDGER_FILENAME']
+JobsFile = os.environ["JOB_JSON_PATH"]
+DBlocation = os.environ["DATABASE_PATH"]
+ledgerfile = os.environ["PROCESSLEDGER_FILENAME"]
 
 # Load ProcessLedger and regain the List of Compounds.
 p = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfile)
@@ -3081,7 +3082,7 @@ if __name__ == "__main__":
 
     # #####combine dataframes into one single df
     dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic)
-    
+
     # Remove Duplicate entries
     # nodup_output = data_output_dir / "HDP_Data_NoDups"
     # nodup_output.mkdir(exist_ok=True)

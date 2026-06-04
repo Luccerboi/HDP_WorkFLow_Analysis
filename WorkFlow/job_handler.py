@@ -8,9 +8,10 @@ import time
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
+
 load_dotenv()
 # Retrieve which partitions SLURM is allowd to use.
-allowed_partitions = eval(os.environ['ALLOWED_PARTITIONS'])
+allowed_partitions = eval(os.environ["ALLOWED_PARTITIONS"])
 
 
 def submit_and_wait(submission="vasp.sub"):
@@ -20,8 +21,8 @@ def submit_and_wait(submission="vasp.sub"):
     once the job completes, fails, or is canceled it will return
     Args:
         submission(str): the filename of the submission scripts, defaults to "vasp.sub"
-    
-    Returns: 
+
+    Returns:
         (str): the function returns the final state of the calculation in SLURM, which should be COMPLETED
                 but it could also be FAILED or CANCELED
     """
@@ -60,7 +61,7 @@ def submit_and_wait(submission="vasp.sub"):
 
 
 def check_availability(
-    allowed_partitions: list[str] = allowed_partitions
+    allowed_partitions: list[str] = allowed_partitions,
 ) -> dict[str, int]:
     """This function will prompt SLURM to check how many nodes are available on CCP20 and CCP22
     Based on the number of nodes idle for each of these it will return the number of nodes that are free per

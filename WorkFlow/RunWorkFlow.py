@@ -21,11 +21,12 @@ warnings.filterwarnings("ignore")
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
+
 load_dotenv()
-JobsFile = os.environ['JOB_JSON_PATH']
-DBlocation = os.environ['DATABASE_PATH']
-ledgerfile = os.environ['PROCESSLEDGER_FILENAME']
-MAX_PROCS = os.environ['MAX_NUM_JOBS']
+JobsFile = os.environ["JOB_JSON_PATH"]
+DBlocation = os.environ["DATABASE_PATH"]
+ledgerfile = os.environ["PROCESSLEDGER_FILENAME"]
+MAX_PROCS = os.environ["MAX_NUM_JOBS"]
 
 # Load ProcessLedger and regain the List of Compounds.
 p = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfile)
@@ -36,20 +37,27 @@ _ = p.ReadFullLedger()
 # CHANGE ONLY IF YOU WANT TO DELETE ALL DATA AND RESTART DATABASE
 # ============================================================================
 restart = False
-InputCompsFile = 'AllCompsInput'
+InputCompsFile = "AllCompsInput"
 
-def create_single_job(JobClass: str, ledger: ProcessLedger, comp: Compound, JobName: str, server="ccp20,ccp22"):
+
+def create_single_job(
+    JobClass: str,
+    ledger: ProcessLedger,
+    comp: Compound,
+    JobName: str,
+    server="ccp20,ccp22",
+):
     """
     Factory function to create a job instance based on the specified job class type.
-    
+
     Args:
-        JobClass (str): Type of job to create ('Relaxation', 'SpinStateScan', 'SimpleVasp', 
+        JobClass (str): Type of job to create ('Relaxation', 'SpinStateScan', 'SimpleVasp',
                         'SimpleLobster', or 'PreLobster')
         ledger (ProcessLedger): The process ledger for tracking job status
         comp (Compound): The Compound object to associate with the job
         JobName (str): Name/identifier for the job
         server (str): Target server(s) for job submission (default: "ccp20,ccp22")
-    
+
     Returns:
         GeneralJob: An instance of the appropriate job class
     """
@@ -65,15 +73,22 @@ def create_single_job(JobClass: str, ledger: ProcessLedger, comp: Compound, JobN
         return PreLobster(ledger, comp, JobName, server)
 
 
-def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger: ProcessLedger, JobSettings: dict, max_new_jobs=4):
+def AssignNextJobs(
+    queue: dict,
+    available: dict,
+    list_of_compounds: list,
+    ledger: ProcessLedger,
+    JobSettings: dict,
+    max_new_jobs=4,
+):
     """
     Assign the next batch of jobs to available nodes on the HPC clusters.
-    
+
     Intelligently distributes jobs based on:
     - Available nodes per cluster
     - Node requirements for each job type
     - Job queue priorities
-    
+
     Args:
         queue (dict): Dictionary mapping job types to lists of Compound IDs waiting to be processed
         available (dict): Dictionary of cluster names to number of available nodes
@@ -81,20 +96,20 @@ def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger
         ledger (ProcessLedger): Process ledger for tracking job progress
         JobSettings (dict): Dictionary containing job configuration (node requirements, etc.)
         max_new_jobs (int): Maximum number of new jobs to assign in this call (default: 4)
-    
+
     Returns:
         tuple: (job_list, updated_queue) - list of newly created jobs and updated queue dictionary
     """
     # Build a dictionary of node requirements for each job type
-    node_usage = {}    
+    node_usage = {}
     for job in queue.keys():
         if len(queue[job]) > 0:
-            node_usage.update({job: JobSettings[job]['nnodes']})
+            node_usage.update({job: JobSettings[job]["nnodes"]})
 
     job_list = []
     usage_list = list(node_usage.items())
     usage_list.reverse()  # Process job types in reverse order
-    
+
     # Iterate through each available cluster
     for server, nnodes in available.items():
         freenodes = nnodes
@@ -114,19 +129,19 @@ def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger
                     # Create a new job instance for this Compound
                     newjob = create_single_job(
                         JobSettings[usage_list[ii][0]]["JobClass"],
-                        ledger, 
+                        ledger,
                         [x for x in list_of_compounds if x.CompID == next_compID][0],
                         usage_list[ii][0],
-                        server
+                        server,
                     )
-                    
+
                     job_list.append(newjob)
                     max_new_jobs -= 1
-                    
+
                     # Stop if we've reached the maximum number of new jobs to assign
                     if max_new_jobs == 0:
                         return job_list, queue
-                    
+
                     # Reduce available nodes on this server
                     freenodes -= usage_list[ii][1]
 
@@ -134,13 +149,14 @@ def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger
 
     return job_list, queue
 
+
 def GetQueueLength(queue: dict) -> int:
     """
     Calculate the total number of jobs remaining in all queues.
-    
+
     Args:
         queue (dict): Dictionary mapping job types to lists of Compound IDs
-    
+
     Returns:
         int: Total number of jobs across all job type queues
     """
@@ -150,25 +166,27 @@ def GetQueueLength(queue: dict) -> int:
 
     return length
 
+
 def RunJob(job: GeneralJob | None):
     """
     Execute a single job and return its completion status.
-    
+
     Logs the job start time and details, then runs the job on the assigned server.
-    
+
     Args:
         job (GeneralJob or None): The job to execute. If None, function returns without action.
-    
+
     Returns:
         The job's return/output value upon completion
     """
     if type(job) == None:
         return
-    
-    print(f"{time.strftime('%H:%M:%S')}: starting {job.AssignedCompName} for job {job.JobName} on {job.AssignedServer}")
+
+    print(
+        f"{time.strftime('%H:%M:%S')}: starting {job.AssignedCompName} for job {job.JobName} on {job.AssignedServer}"
+    )
     out = job.Run()
     return out
-
 
 
 # ============================================================================
@@ -179,7 +197,7 @@ def RunJob(job: GeneralJob | None):
 ledger = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfile)
 
 # Load job specifications from JSON file
-with open(JobsFile, 'r') as f:
+with open(JobsFile, "r") as f:
     jobdata = json.load(f)
 
 # Initialize or restore the database and Compound list
@@ -213,11 +231,13 @@ queuelength = GetQueueLength(queue)
 while queuelength > 0:
     # Check cluster availability before assigning new jobs
     avail = check_availability()
-    
+
     # Assign next batch of jobs to available nodes
-    JobList, queue = AssignNextJobs(queue, avail, loc, ledger, jobdata, max_new_jobs=MAX_PROCS)
+    JobList, queue = AssignNextJobs(
+        queue, avail, loc, ledger, jobdata, max_new_jobs=MAX_PROCS
+    )
     print(JobList)
-    
+
     # Log each job being started
     for job in JobList:
         print(f"{time.strftime('%H:%M:%S')}: starting job {job}")
@@ -226,7 +246,7 @@ while queuelength > 0:
     with cf.ProcessPoolExecutor(max_workers=MAX_PROCS) as executor:
         # Create a mapping of futures to job objects
         future_to_comps = {executor.submit(RunJob, job): job for job in JobList}
-        
+
         # Monitor job completion and submit new jobs as resources become available
         while future_to_comps:
             # Wait for at least one job to complete
@@ -235,23 +255,28 @@ while queuelength > 0:
                 try:
                     data = future.result()
                 except Exception as exc:
-                    print('%r generated an exception: %s' % (comp, exc))
+                    print("%r generated an exception: %s" % (comp, exc))
                 else:
-                    print("%s: \t %r returned %s " % (time.strftime('%H:%M:%S'), comp, data))
-                
+                    print(
+                        "%s: \t %r returned %s "
+                        % (time.strftime("%H:%M:%S"), comp, data)
+                    )
+
                 # Remove the completed future from tracking
                 del future_to_comps[future]
 
                 # Backup ledger after each job completion to prevent data loss
                 os.system(f"cp {ledger.LedgerFile} {ledger.LedgerBackup}")
-                
+
                 # Check if more jobs are available and assign them to free workers
                 if GetQueueLength(queue) > 1:
-                    JobList, queue = AssignNextJobs(queue, avail, loc, ledger, jobdata, max_new_jobs=MAX_PROCS)
+                    JobList, queue = AssignNextJobs(
+                        queue, avail, loc, ledger, jobdata, max_new_jobs=MAX_PROCS
+                    )
                     for new_job in JobList:
                         future_to_comps[executor.submit(RunJob, new_job)] = new_job
                 else:
-                    print('end of Queue reached, reinitializing Queue now...')
+                    print("end of Queue reached, reinitializing Queue now...")
                     queue = ledger.GetQueue()
 
         # Update queue status after all current jobs complete
@@ -259,6 +284,3 @@ while queuelength > 0:
         queuelength = GetQueueLength(total_queue)
         if GetQueueLength(queue) == 0:
             queue = ledger.GetQueue()
-
-
-

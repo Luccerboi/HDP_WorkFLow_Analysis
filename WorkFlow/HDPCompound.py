@@ -1,4 +1,4 @@
-""" 
+"""
 HDPCompound.py
 Contains the Compound class to create a Halide Double Perovskite Compound with some functionality to writing input files.
 """
@@ -13,9 +13,10 @@ from pathlib import Path
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
+
 load_dotenv()
 # Retrieve to VASP PAW PseudoPotentials
-path_to_pseudo = os.environ['PATH_TO_PSEUDO']
+path_to_pseudo = os.environ["PATH_TO_PSEUDO"]
 
 
 chemical_symbols = [
@@ -323,7 +324,12 @@ class Compound:
             )
         return
 
-    def write_potcar(self, use_frozen: bool = False, write_file: bool = True, path_to_PAWs: str = path_to_pseudo):
+    def write_potcar(
+        self,
+        use_frozen: bool = False,
+        write_file: bool = True,
+        path_to_PAWs: str = path_to_pseudo,
+    ):
         """This function concatonates the POTCARS for each species defined by the object compound. Which specific POTCAR is used for each
         species is determined by potLUT (potential Look Up Table).
         If any species is given that is not present in the potLUT this function will fail
@@ -370,9 +376,7 @@ class Compound:
             dict: a Dictonary of 'element':'basis functions' that are to be used in LOBSTER projection
         """
 
-        basisfile = (
-            f"./assests/BASIS_PBE_64_{basis}.yaml"
-        )
+        basisfile = f"./assests/BASIS_PBE_64_{basis}.yaml"
         LUTpath = "./assets/potLUT_nofrozen"
 
         with open(LUTpath, "rt") as f:
@@ -492,4 +496,3 @@ class Compound:
                     nbands += 7 * mult
 
         return nbands
-

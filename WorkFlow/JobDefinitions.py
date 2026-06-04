@@ -15,11 +15,11 @@ import json
 # Use python-dotenv to load settings from .env file.
 # ============================================================================
 from dotenv import load_dotenv
+
 load_dotenv()
 # Retrieve to VASP PAW PseudoPotentials
-vasp_command = os.environ['VASP_COMMAND']
-lobster_command = os.environ['LOBSTER_COMMAND']
-
+vasp_command = os.environ["VASP_COMMAND"]
+lobster_command = os.environ["LOBSTER_COMMAND"]
 
 
 class GeneralJob:
@@ -104,7 +104,12 @@ class GeneralJob:
 
         return incar
 
-    def WriteSubmission(self, LogFileExtra="", vasp_command = vasp_command, lobster_command = lobster_command):
+    def WriteSubmission(
+        self,
+        LogFileExtra="",
+        vasp_command=vasp_command,
+        lobster_command=lobster_command,
+    ):
         """Write the SLURM submission script for this job.
 
         The generated submission file is named based on the job type (e.g. "vasp.sub" or "lobster.sub").
@@ -118,7 +123,7 @@ class GeneralJob:
         self.SubFile = filename
         self.LogFile = f"log_{self.JobID}_{self.AssignedCompName}{LogFileExtra}"
         self.ErrorFile = f"error_{self.JobID}_{self.AssignedCompName}{LogFileExtra}"
-        
+
         # Extract nnodes and potentially time from JobSettings JSON
         nnodes = self.JobBasics["nnodes"]
         if "max_time" in self.JobBasics.keys():
@@ -897,7 +902,6 @@ class SimpleLobster(GeneralJob):
             tuple[float, float]: COHP start and end energies.
         """
 
-
         with open(use_file, "r") as file:
             lines = file.readlines()
 
@@ -1044,11 +1048,16 @@ class SimpleLobster(GeneralJob):
 
             print(f"starting LOB for {self.AssignedCompName}")
             slurm_exit = submit_and_wait(self.SubFile)
-            
+
             if slurm_exit != "COMPLETED":
-                #some weird error, save slurm exit code to the completion field in the ledger
-                self.ledger.SetSingleValue(self.AssignedComp, self.JobName, Field="completed", value=f"slurm:{slurm_exit}")
-                return 'slurm'
+                # some weird error, save slurm exit code to the completion field in the ledger
+                self.ledger.SetSingleValue(
+                    self.AssignedComp,
+                    self.JobName,
+                    Field="completed",
+                    value=f"slurm:{slurm_exit}",
+                )
+                return "slurm"
 
             # Check projection quality parameters
             spil_restart = self.check_charge_spilling()
