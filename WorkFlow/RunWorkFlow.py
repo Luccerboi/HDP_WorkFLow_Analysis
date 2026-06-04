@@ -4,7 +4,9 @@ Automated workflow manager for HDP calculations on HPC clusters.
 Handles job queuing, submission, and monitoring across multiple clusters (ccp20, ccp22, ccp23).
 """
 
-from CsBBCl_ht_new import *
+from HTProcessLedger import ProcessLedger, initialize_compounds
+from HDPCompound import Compound
+from JobDefinitions import *
 from job_handler import submit_and_wait, check_availability
 import os
 import json
@@ -22,7 +24,7 @@ warnings.filterwarnings("ignore")
 # Path to the JSON file containing job specifications and parameters
 JobsFile = "/home/lwalterb/hdp_project/ht_programfiles/HDP_JOBS_v2507.json"
 
-# Path to the input compounds file used for initializing the database
+# Path to the input Compounds file used for initializing the database
 InputCompsFile = "/home/lwalterb/hdp_project/ht_programfiles/AllCompsInput"
 
 # Remote database location on the HPC cluster where calculations are stored
@@ -37,7 +39,7 @@ ledgerfile = "BAMadapted_NoCs6s.csv"
 # Maximum number of jobs to process in parallel
 MAX_PROCS = 4
 
-def create_single_job(JobClass: str, ledger: ProcessLedger, comp: compound, JobName: str, server="ccp20,ccp22"):
+def create_single_job(JobClass: str, ledger: ProcessLedger, comp: Compound, JobName: str, server="ccp20,ccp22"):
     """
     Factory function to create a job instance based on the specified job class type.
     
@@ -45,7 +47,7 @@ def create_single_job(JobClass: str, ledger: ProcessLedger, comp: compound, JobN
         JobClass (str): Type of job to create ('Relaxation', 'SpinStateScan', 'SimpleVasp', 
                         'SimpleLobster', or 'PreLobster')
         ledger (ProcessLedger): The process ledger for tracking job status
-        comp (compound): The compound object to associate with the job
+        comp (Compound): The Compound object to associate with the job
         JobName (str): Name/identifier for the job
         server (str): Target server(s) for job submission (default: "ccp20,ccp22")
     
@@ -74,9 +76,9 @@ def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger
     - Job queue priorities
     
     Args:
-        queue (dict): Dictionary mapping job types to lists of compound IDs waiting to be processed
+        queue (dict): Dictionary mapping job types to lists of Compound IDs waiting to be processed
         available (dict): Dictionary of cluster names to number of available nodes
-        list_of_compounds (list): List of all compound objects
+        list_of_compounds (list): List of all Compound objects
         ledger (ProcessLedger): Process ledger for tracking job progress
         JobSettings (dict): Dictionary containing job configuration (node requirements, etc.)
         max_new_jobs (int): Maximum number of new jobs to assign in this call (default: 4)
@@ -104,13 +106,13 @@ def AssignNextJobs(queue: dict, available: dict, list_of_compounds: list, ledger
                 # Keep assigning jobs of this type while there are enough free nodes
                 while freenodes >= usage_list[ii][1]:
                     try:
-                        # Get next compound ID from the queue for this job type
+                        # Get next Compound ID from the queue for this job type
                         next_compID = queue[usage_list[ii][0]].pop(0)
                     except IndexError:
                         # Queue is empty for this job type
                         break
 
-                    # Create a new job instance for this compound
+                    # Create a new job instance for this Compound
                     newjob = create_single_job(
                         JobSettings[usage_list[ii][0]]["JobClass"],
                         ledger, 
@@ -138,7 +140,7 @@ def GetQueueLength(queue: dict) -> int:
     Calculate the total number of jobs remaining in all queues.
     
     Args:
-        queue (dict): Dictionary mapping job types to lists of compound IDs
+        queue (dict): Dictionary mapping job types to lists of Compound IDs
     
     Returns:
         int: Total number of jobs across all job type queues
@@ -181,7 +183,7 @@ ledger = ProcessLedger(JobsFile, StartPath=DBlocation, ledger_filename=ledgerfil
 with open(JobsFile, 'r') as f:
     jobdata = json.load(f)
 
-# Initialize or restore the database and compound list
+# Initialize or restore the database and Compound list
 if restart:
     # Start fresh: delete all existing data and reinitialize
     loc = initialize_compounds(InputCompsFile)
