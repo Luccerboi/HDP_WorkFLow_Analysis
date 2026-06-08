@@ -29,13 +29,6 @@ from scipy.ndimage import gaussian_filter1d
 import warnings
 import time
 
-from lobsterpy.plotting import (
-    InteractiveCohpPlotter,
-    IcohpDistancePlotter,
-    PlainCohpPlotter,
-    PlainDosPlotter,
-    get_style_list,
-)
 from lobsterpy.featurize.core import FeaturizeIcoxxlist
 from pymatgen.electronic_structure.dos import (
     Dos,
