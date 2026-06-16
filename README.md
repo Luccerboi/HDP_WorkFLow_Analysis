@@ -2,7 +2,7 @@
 
 # HDP WorkFlow Analysis
 
-This repository contains tools used for the creation of our database published as [Spin-Polarized Electronic Structure and Chemical Bonding Data for 2,500+ Halide Double Perovskites](LINK TO OUR PAPER). It contains functionality for creating input files, monitoring completion, and analyzing results. The main automation logic lives under the `WorkFlow/` folder. The full dataset is available over [NOMAD](http://doi.org/10.17172/nomad.wb9y-b8j7). The manuscript giving more details will be available soon.
+This repository contains tools used for the creation of our database published as [Spin-Polarized Electronic Structure and Chemical Bonding Data for 2,500+ Halide Double Perovskites](https://doi.org/10.48550/arXiv.2606.11928). It contains functionality for creating input files, monitoring completion, and analyzing results. The main automation logic lives under the `WorkFlow/` folder. The full dataset is available over [NOMAD](http://doi.org/10.17172/nomad.wb9y-b8j7). The manuscript giving more details will be available soon.
 
 ## Repository structure
 
