@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=hdp_ehull_MACE
-#SBATCH --time=7-00:00:00
+#SBATCH --time=4-00:00:00
 #SBATCH --output=results.out.%j
 #SBATCH --error=results.err.%j
 #SBATCH --nodes=1
@@ -22,6 +22,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 N_CONCURRENT=4  # start here, watch nvidia-smi + squeue timing
 for i in $(seq 0 $((N_CONCURRENT-1))); do
     python drive_ehull_calcs.py  $i  $N_CONCURRENT $mlip &
+    sleep 2
    # python drive_ehull_calcs.py  0 3  $mlip &
 done
 wait

@@ -1,4 +1,4 @@
-from ehull_utils import mlip_relax_and_get_energies, mlip_relax_batched
+from ehull_utils import mlip_relax_and_get_energies
 import pandas as pd
 from pymatgen.core import Structure
 import os
@@ -18,13 +18,12 @@ to_compute = ["MACE-Gabor","SevenNet","MatterSim","MatPES-r2SCAN", "MACE-MP-0b3"
 #assert mlip in to_compute, f"MLIP argument must be in {to_compute}."
 
 ## Read chemical systems to simulate and convert structure dicts to structure objects
-#subsys_df = pd.read_csv('hdp_mp_subsysandhdps.csv',index_col=0)
-subsys_df = pd.read_csv(f'MissingStrucs_{mlip}.csv',index_col=0)
+subsys_df = pd.read_csv('hdp_mp_subsysandhdps.csv',index_col=0)
 
 relax_kwargs = {
     # "steps" : 1000,
-    "fmax" : 0.005,
-    "maxstep": 0.0001,
+    "fmax" : 0.001,
+    "maxstep": 0.03,
 }
 optimizer_kwargs = {
 
@@ -78,12 +77,10 @@ mlip_specifications = {
         }
     },
     "MatterSim" : {
-        "model_name" : {"@module": "mattersim.forcefield.potential","@callable": "MatterSimCalculator"},
-        "mlip_kwargs": {
-            "potential" : "mattersim-v1.0.0-5m",
-            "device" : "cuda",
-            "default_dtype" : "float64"
-        },
+        "model_name" : "MatterSim",
+        "potential" : "mattersim-v1.0.0-5M",
+        "device" : "cuda",
+        "default_dtype" : "float64"
     },
     "Equiformer_v3" : {
         "model_name" : {"@module": "fairchem.core.common.relaxation.ase_utils", "@callable": "OCPCalculator"},
@@ -106,12 +103,12 @@ try:
 except IndexError:
     batch_df = subsys_df.iloc[batchnum*batchsize:]
 
-batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])).to_conventional(),axis=1)
+batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])),axis=1)
 
 print(f"Starting {mlip} for batchnumber {batchnum}")
 
 
-mpid_energy_dict = mlip_relax_batched(structure_dict= batch_df['structure'], 
+mpid_energy_dict = mlip_relax_and_get_energies(structure_dict= batch_df['structure'], 
                                                     force_field_name=mlip_specifications[mlip]["model_name"],
                                                     calculator_kwargs=mlip_specifications[mlip]["mlip_kwargs"],
                                                     relax_kwargs= relax_kwargs,
@@ -121,19 +118,14 @@ mpid_energy_dict = mlip_relax_batched(structure_dict= batch_df['structure'],
 # with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}_batch_{batchnum}.json"), "w") as f:
     # json.dump(mpid_energy_dict, f)
 with lock.acquire(timeout=30):
-    try:
-        with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "r") as f:
-            d =  json.load(f)
-    except FileNotFoundError:
-        print(f"starting new data json for {mlip}")
-        d = {}
-        pass 
-    d.update(mpid_energy_dict)
-    with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "w") as f:
-        json.dump(d,f)
- 
-     # with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "a") as f:
-         # json.dump(mpid_energy_dict, f)
+#    with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "r") as f:
+#        d =  json.load(f)
+#    d.update(mpid_energy_dict)
+#    with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "w") as f:
+#        json.dump(mpid_energy_dict,f)
+
+    with open(os.path.join(data_dir, f"mpid_energy_dict_{mlip}.json"), "a") as f:
+        json.dump(mpid_energy_dict, f)
 
 print(f"Finished {mlip} flow no. {batchnum}")
 

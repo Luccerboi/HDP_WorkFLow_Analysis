@@ -24,7 +24,7 @@ subsys_df = pd.read_csv(f'MissingStrucs_{mlip}.csv',index_col=0)
 relax_kwargs = {
     # "steps" : 1000,
     "fmax" : 0.005,
-    "maxstep": 0.0001,
+    "maxstep": 0.01,
 }
 optimizer_kwargs = {
 
@@ -106,7 +106,7 @@ try:
 except IndexError:
     batch_df = subsys_df.iloc[batchnum*batchsize:]
 
-batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])).to_conventional(),axis=1)
+batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])),axis=1)
 
 print(f"Starting {mlip} for batchnumber {batchnum}")
 

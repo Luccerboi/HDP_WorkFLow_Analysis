@@ -24,7 +24,7 @@ subsys_df = pd.read_csv(f'MissingStrucs_{mlip}.csv',index_col=0)
 relax_kwargs = {
     # "steps" : 1000,
     "fmax" : 0.005,
-    "maxstep": 0.0001,
+    "maxstep": 0.05,
 }
 optimizer_kwargs = {
 
@@ -100,13 +100,19 @@ mlip_specifications = {
 data_dir = "ExpensiveMLIPs"
 os.makedirs(data_dir, exist_ok=True)
 
+
+allowed_els = ['Ac', 'Ag', 'Al', 'Ar', 'As', 'Au', 'B', 'Ba', 'Be', 'Bi', 'Br', 'C', 'Ca', 'Cd', 'Ce', 'Cl', 'Co', 'Cr', 'Cs', 'Cu', 'Dy', 'Er', 'Eu', 'F', 'Fe', 'Ga', 'Gd', 'Ge', 'H', 'He', 'Hf', 'Hg', 'Ho', 'I', 'In', 'Ir', 'K', 'Kr', 'La', 'Li', 'Lu', 'Mg', 'Mn', 'Mo', 'N', 'Na', 'Nb', 'Nd', 'Ne', 'Ni', 'Np', 'O', 'Os', 'P', 'Pa', 'Pb', 'Pd', 'Pm', 'Pr', 'Pt', 'Pu', 'Rb', 'Re', 'Rh', 'Ru', 'S', 'Sb', 'Sc', 'Se', 'Si', 'Sm', 'Sn', 'Sr', 'Ta', 'Tb', 'Tc', 'Te', 'Th', 'Ti', 'Tl', 'Tm', 'U', 'V', 'W', 'Xe', 'Y', 'Yb', 'Zn', 'Zr']
+drop_comps = subsys_df.apply(lambda row: False in [x in allowed_els for x in row['chemsys'].split('-')], axis=1)
+subsys_df.drop(drop_comps[drop_comps==True].index,inplace=True)
+
 n_batches = ceil(len(subsys_df)/batchsize)
 try:
     batch_df = subsys_df.iloc[batchnum * batchsize : (batchnum+1)*batchsize]
 except IndexError:
     batch_df = subsys_df.iloc[batchnum*batchsize:]
 
-batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])).to_conventional(),axis=1)
+batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])),axis=1)
+
 
 print(f"Starting {mlip} for batchnumber {batchnum}")
 

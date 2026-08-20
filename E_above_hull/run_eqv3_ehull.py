@@ -24,7 +24,7 @@ subsys_df = pd.read_csv(f'MissingStrucs_{mlip}.csv',index_col=0)
 relax_kwargs = {
     # "steps" : 1000,
     "fmax" : 0.005,
-    "maxstep": 0.0001,
+    "maxstep": 0.01,
 }
 optimizer_kwargs = {
 
@@ -109,6 +109,20 @@ except IndexError:
 batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row['structure_dict'])).to_conventional(),axis=1)
 
 print(f"Starting {mlip} for batchnumber {batchnum}")
+
+from ase.neighborlist import neighbor_list
+
+CUTOFF = 6.0  # use your model's actual cutoff
+
+def check_structure(struct: Structure, cutoff: float = CUTOFF) -> bool:
+    atoms = struct.to_ase_atoms()
+    i, j = neighbor_list("ij", atoms, cutoff)
+    return len(i) > 0  # False means no edges → will crash
+
+bad = [(idx, s) for idx, s in batch_df['structure'].items() if not check_structure(s)]
+if bad:
+    print(f"Structures with no neighbors within {CUTOFF} Å: {[i for i, _ in bad]}")
+    batch_df.drop([i for i,_ in bad],inplace=True)
 
 
 mpid_energy_dict = mlip_relax_batched(structure_dict= batch_df['structure'], 
