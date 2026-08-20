@@ -79,6 +79,72 @@ def mlip_relax_and_get_energies(
             flow_output[mpid] = None
     return flow_output
 
+def mlip_relax_2step(
+    force_field_name: str | MLFF,
+    structure_dict: pd.Series,
+    pre_relax_kwargs: dict = {"fmax":0.03},
+    main_relax_kwargs: dict = {"fmax":0.005},
+    calculator_kwargs: dict = {},
+    optimizer1_kwargs: dict = {"optimizer": "FIRE","max_step":0.05},
+    optimizer2_kwargs: dict = {"optimizer":"LBFGS","max_step":0.01},
+) -> dict:  # calc kwargs need to be adapted for nequip
+    from jobflow import SETTINGS
+    store = SETTINGS.JOB_STORE
+    store.connect()
+
+    pre_rel_maker = ForceFieldRelaxMaker(
+        force_field_name=force_field_name, calculator_kwargs=calculator_kwargs,fix_symmetry=True, relax_kwargs= pre_relax_kwargs, steps= 250000,
+        optimizer_kwargs = optimizer1_kwargs, name="pre_relax"
+    )
+
+    main_rel_maker = ForceFieldRelaxMaker(
+        force_field_name=force_field_name, calculator_kwargs=calculator_kwargs,fix_symmetry=True, relax_kwargs= main_relax_kwargs, steps= 250000,
+        optimizer_kwargs = optimizer2_kwargs, name="main_relax"
+    )
+
+    job_uuid_to_idfr = {}
+    jobs = []
+    for mpid, structure in structure_dict.items():
+        pre_rel_job = pre_rel_maker.make(structure=structure)
+        main_rel_job = main_rel_maker.make(structure= pre_rel_job.output.structure)
+        rel_flow = Flow([pre_rel_job,main_rel_job], output=main_rel_job.output, name="two-stage relax")
+
+        response = run_locally(rel_flow, create_folders=True, root_dir=f"{force_field_name}", store=store)
+        final_doc = response[main_rel_job.uuid][1].output
+        print("Final max force converged:", final_doc.is_force_converged)
+        print("Final energy:", final_doc.output.energy)
+
+
+    # flow = Flow(jobs)
+    # resp = run_locally(flow,create_folders=True, root_dir=f"{force_field_name}", store=store)
+
+    # flow_output = {}
+    # for uuid, mpid in job_uuid_to_idfr.items():
+    #     try:
+    #         output = resp[uuid][1].output
+    #     except (
+    #         KeyError
+    #     ):  # I want to ignore elements that are not covered by a specific MLIP
+    #         flow_output[mpid] = None
+    #         continue
+
+    #     if (
+    #         output is not None
+    #         and output.is_force_converged
+    #         # and abs(output.output.energy) < energy_tol
+    #     ):
+    #         # Beware: differently structured dict than in direct phase diagram computation util below
+    #         flow_output[mpid] = output.output.energy
+
+    #     elif (
+    #         output is not None
+    #         and not output.is_force_converged
+    #     ):
+    #         flow_output[mpid] = f"{uuid} Failed Conv.{output.output.n_steps}, rem force: {np.max(output.output.forces)}"
+    #     else:
+    #         flow_output[mpid] = None
+    return {}
+
 def mlip_relax_batched(
     force_field_name: str | MLFF,
     structure_dict: pd.Series,
