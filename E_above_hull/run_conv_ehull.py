@@ -1,4 +1,4 @@
-from ehull_utils import mlip_relax_and_get_energies, mlip_relax_batched
+from ehull_utils import mlip_relax_and_get_energies
 import pandas as pd
 from pymatgen.core import Structure
 import os
@@ -24,7 +24,7 @@ subsys_df = pd.read_csv(f'MissingStrucs_{mlip}.csv',index_col=0)
 relax_kwargs = {
     # "steps" : 1000,
     "fmax" : 0.005,
-    "maxstep": 0.0001,
+    "maxstep": 0.001,
 }
 optimizer_kwargs = {
 
@@ -111,7 +111,7 @@ batch_df['structure'] = batch_df.apply(lambda row: Structure.from_dict(eval(row[
 print(f"Starting {mlip} for batchnumber {batchnum}")
 
 
-mpid_energy_dict = mlip_relax_batched(structure_dict= batch_df['structure'], 
+mpid_energy_dict = mlip_relax_and_get_energies(structure_dict= batch_df['structure'], 
                                                     force_field_name=mlip_specifications[mlip]["model_name"],
                                                     calculator_kwargs=mlip_specifications[mlip]["mlip_kwargs"],
                                                     relax_kwargs= relax_kwargs,
