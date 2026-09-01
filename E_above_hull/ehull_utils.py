@@ -82,11 +82,11 @@ def mlip_relax_and_get_energies(
 def mlip_relax_2step(
     force_field_name: str | MLFF,
     structure_dict: pd.Series,
-    pre_relax_kwargs: dict = {"fmax":0.03},
-    main_relax_kwargs: dict = {"fmax":0.005},
+    pre_relax_kwargs: dict = {"fmax":0.03,"maxstep":0.05},
+    main_relax_kwargs: dict = {"fmax":0.005, "maxstep":0.01},
     calculator_kwargs: dict = {},
-    optimizer1_kwargs: dict = {"optimizer": "FIRE","max_step":0.05},
-    optimizer2_kwargs: dict = {"optimizer":"LBFGS","max_step":0.01},
+    optimizer1_kwargs: dict = {"optimizer": "FIRE"},
+    optimizer2_kwargs: dict = {"optimizer":"LBFGS"},
 ) -> dict:  # calc kwargs need to be adapted for nequip
     from jobflow import SETTINGS
     store = SETTINGS.JOB_STORE
@@ -94,7 +94,7 @@ def mlip_relax_2step(
 
     pre_rel_maker = ForceFieldRelaxMaker(
         force_field_name=force_field_name, calculator_kwargs=calculator_kwargs,fix_symmetry=True, relax_kwargs= pre_relax_kwargs, steps= 250000,
-        optimizer_kwargs = optimizer1_kwargs, name="pre_relax"
+        optimizer_kwargs = optimizer1_kwargs, name="pre_relax", store_trajectory=True
     )
 
     main_rel_maker = ForceFieldRelaxMaker(
@@ -298,11 +298,12 @@ def construct_phase_diagrams(
 
                 # Need to extract the HDP entry in order to get E above hull and Formation energy
                 my_entry = [x for x in pd_entries if x.name == comp_id][0]
-                pd_entries.remove(my_entry)
+                # pd_entries.remove(my_entry)
 
                 phaseD = PhaseDiagram(pd_entries,elements=elemental_endpoints)
+                # print(my_entry)
 
-                s_ehull[mlip] = phaseD.get_e_above_hull(my_entry, allow_negative=True)
+                s_ehull[mlip] = phaseD.get_e_above_hull(my_entry)
                 s_eform[mlip] = phaseD.get_form_energy_per_atom(my_entry)
                 diagram_data.update({mlip: phaseD.as_dict()})
             else:
@@ -340,29 +341,29 @@ def summarize_results(
         dropped_comps = len(mlip_df) - len(all_ens)
         print(mlip, '\t', dropped_comps)
 
-    print('MLIP:','\t','Missing HDPs:', '\t', 'share unstable (>50meV/atom):')
+    print('MLIP:','\t','Missing HDPs:', '\t', 'share stable (<=100meV/atom):')
 
     for mlip in ehull_df.columns:
         sclean = ehull_df[mlip].dropna()
         dropped_cols = len(ehull_df) - len(sclean)
-        non_stalbe = sclean[sclean>0.05]
-        print(mlip, '\t', dropped_cols, '\t', len(non_stalbe)/len(sclean))
+        stalbe = sclean[sclean<=0.1]
+        print(mlip, '\t', dropped_cols, '\t', len(stalbe)/len(sclean))
 
-    print('MLIP:','\t','Missing HDPs:', '\t', 'share unstable (>100meV/atom):')
-
-    for mlip in ehull_df.columns:
-        sclean = ehull_df[mlip].dropna()
-        dropped_cols = len(ehull_df) - len(sclean)
-        non_stalbe = sclean[sclean>0.1]
-        print(mlip, '\t', dropped_cols, '\t', len(non_stalbe)/len(sclean))
-
-    print('MLIP:','\t','Missing HDPs:', '\t', 'share unstable (>200meV/atom):')
+    print('MLIP:','\t','Missing HDPs:', '\t', 'share stable (<=150meV/atom):')
 
     for mlip in ehull_df.columns:
         sclean = ehull_df[mlip].dropna()
         dropped_cols = len(ehull_df) - len(sclean)
-        non_stalbe = sclean[sclean>0.2]
-        print(mlip, '\t', dropped_cols, '\t', len(non_stalbe)/len(sclean))
+        stalbe = sclean[sclean<=0.15]
+        print(mlip, '\t', dropped_cols, '\t', len(stalbe)/len(sclean))
+
+    print('MLIP:','\t','Missing HDPs:', '\t', 'share stable (<=200meV/atom):')
+
+    for mlip in ehull_df.columns:
+        sclean = ehull_df[mlip].dropna()
+        dropped_cols = len(ehull_df) - len(sclean)
+        stalbe = sclean[sclean<=0.2]
+        print(mlip, '\t', dropped_cols, '\t', len(stalbe)/len(sclean))
 
     return
 
