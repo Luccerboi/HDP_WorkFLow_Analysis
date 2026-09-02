@@ -1,0 +1,6 @@
+AprilAnalysis/
+__pycache__/
+mpid_energy_*
+*/__pycache__/
+slurm_logs/
+.vscode/
