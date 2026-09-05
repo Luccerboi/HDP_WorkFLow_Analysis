@@ -16,7 +16,15 @@ import glob
 
 
 def get_chemical_subsystems(chemsys: str) -> list:
-    """Code adapted from mp_api.client.mprester.py."""
+    """Return every non-empty chemical subsystem represented by ``chemsys``.
+
+    Args:
+        chemsys: Hyphen-separated element symbols, such as ``"Li-Fe-O"``.
+
+    Returns:
+        Sorted, hyphen-separated subsystem names, including the elemental
+        endpoints and the complete chemical system.
+    """
     subsystems = []
     elements = chemsys.split("-")
     elements_set = set(elements)
@@ -33,6 +41,21 @@ def mlip_relax_and_get_energies(
     relax_kwargs: dict = {},
     optimizer_kwargs: dict = {},
 ) -> dict:  # calc kwargs need to be adapted for nequip
+    """Relax structures with a force-field workflow and collect energies.
+
+    Args:
+        force_field_name: Name of the force field or an ``MLFF`` enum value.
+        structure_dict: Series mapping structure identifiers to pymatgen
+            structures.
+        calculator_kwargs: Keyword arguments passed to the force-field
+            calculator.
+        relax_kwargs: Keyword arguments controlling relaxation convergence.
+        optimizer_kwargs: Keyword arguments for the relaxation optimizer.
+
+    Returns:
+        Mapping from structure identifier to relaxed energy, a convergence
+        failure description, or ``None`` when the structure is unsupported.
+    """
     from jobflow import SETTINGS
     store = SETTINGS.JOB_STORE
     store.connect()
@@ -54,6 +77,7 @@ def mlip_relax_and_get_energies(
 
     flow_output = {}
     for uuid, mpid in job_uuid_to_idfr.items():
+        # A missing response means this force field could not process the job.
         try:
             output = resp[uuid][1].output
         except (
@@ -88,6 +112,25 @@ def mlip_relax_2step(
     optimizer1_kwargs: dict = {"optimizer": "FIRE"},
     optimizer2_kwargs: dict = {"optimizer":"LBFGS"},
 ) -> dict:  # calc kwargs need to be adapted for nequip
+    """Run a pre-relaxation followed by a main relaxation for each structure.
+    Was attempted, but it did not help. IMPLEMENTATION IS NOT COMPLETE.
+
+    Args:
+        force_field_name: Name of the force field or an ``MLFF`` enum value.
+        structure_dict: Series mapping structure identifiers to pymatgen
+            structures.
+        pre_relax_kwargs: Convergence settings for the first relaxation.
+        main_relax_kwargs: Convergence settings for the second relaxation.
+        calculator_kwargs: Keyword arguments passed to both calculators.
+        optimizer1_kwargs: Keyword arguments for the pre-relaxation
+            optimizer.
+        optimizer2_kwargs: Keyword arguments for the main-relaxation
+            optimizer.
+
+    Returns:
+        An empty dictionary. The current implementation reports each final
+        relaxation to stdout but does not yet persist per-structure results.
+    """
     from jobflow import SETTINGS
     store = SETTINGS.JOB_STORE
     store.connect()
@@ -105,6 +148,7 @@ def mlip_relax_2step(
     job_uuid_to_idfr = {}
     jobs = []
     for mpid, structure in structure_dict.items():
+        # The second job consumes the relaxed structure produced by the first.
         pre_rel_job = pre_rel_maker.make(structure=structure)
         main_rel_job = main_rel_maker.make(structure= pre_rel_job.output.structure)
         rel_flow = Flow([pre_rel_job,main_rel_job], output=main_rel_job.output, name="two-stage relax")
@@ -115,34 +159,6 @@ def mlip_relax_2step(
         print("Final energy:", final_doc.output.energy)
 
 
-    # flow = Flow(jobs)
-    # resp = run_locally(flow,create_folders=True, root_dir=f"{force_field_name}", store=store)
-
-    # flow_output = {}
-    # for uuid, mpid in job_uuid_to_idfr.items():
-    #     try:
-    #         output = resp[uuid][1].output
-    #     except (
-    #         KeyError
-    #     ):  # I want to ignore elements that are not covered by a specific MLIP
-    #         flow_output[mpid] = None
-    #         continue
-
-    #     if (
-    #         output is not None
-    #         and output.is_force_converged
-    #         # and abs(output.output.energy) < energy_tol
-    #     ):
-    #         # Beware: differently structured dict than in direct phase diagram computation util below
-    #         flow_output[mpid] = output.output.energy
-
-    #     elif (
-    #         output is not None
-    #         and not output.is_force_converged
-    #     ):
-    #         flow_output[mpid] = f"{uuid} Failed Conv.{output.output.n_steps}, rem force: {np.max(output.output.forces)}"
-    #     else:
-    #         flow_output[mpid] = None
     return {}
 
 def mlip_relax_batched(
@@ -152,6 +168,22 @@ def mlip_relax_batched(
     relax_kwargs: dict = {},
     optimizer_kwargs: dict = {},
 ) -> dict:  # calc kwargs need to be adapted for nequip
+    """Relax a batch of structures in one force-field job.
+
+    Args:
+        force_field_name: Name of the force field or an ``MLFF`` enum value.
+        structure_dict: Series whose index contains structure identifiers and
+            whose values are pymatgen structures.
+        calculator_kwargs: Keyword arguments passed to the force-field
+            calculator.
+        relax_kwargs: Keyword arguments controlling relaxation convergence.
+        optimizer_kwargs: Keyword arguments for the relaxation optimizer.
+
+    Returns:
+        Mapping from structure identifier to relaxed energy or a convergence
+        failure description. Structures whose result cannot be read map to
+        ``None``.
+    """
     from jobflow import SETTINGS
     store = SETTINGS.JOB_STORE
     store.connect()
@@ -177,6 +209,7 @@ def mlip_relax_batched(
 
     flow_output = {}
     for mpid, doc in zip(structure_dict.index.to_list(), docs):
+        # Batched output preserves the input order, so pair it with the index.
         #print(mpid, doc.output.energy, doc.output.forces)
         try:
             force_relaxed = np.max([np.linalg.norm(x) for x in doc.output.forces]) < relax_kwargs['fmax']
@@ -199,6 +232,18 @@ def combine_batches_to_series(
     data_dir: str | PathLike = "MLIP_data",
     filename_root: str = "mpid_energy_dict",
 ) -> pd.Series:
+    """Combine JSON energy dictionaries written by separate batch runs.
+    Uses glob to find the right JSON dictionaries.
+
+    Args:
+        mlip_name: Force-field name embedded in each batch filename.
+        data_dir: Directory containing the batch JSON files.
+        filename_root: Common prefix used by the batch files.
+
+    Returns:
+        A Series indexed by structure identifier and containing the collected
+        energies.
+    """
     glob_string = f"{filename_root}_{mlip_name}_batch*"
     batch_list = glob.iglob(glob_string, root_dir=Path(data_dir))
 
@@ -217,6 +262,20 @@ def collect_mlip_energies_to_df(
         batchfn_root: str = "mpid_energy_dict",
         output_fn: str | PathLike | None = None,
 ):
+    """Load MLIP energies into a structures DataFrame.
+
+    Args:
+        structures_df: Input DataFrame or path to a CSV file containing the
+            structures and metadata.
+        mlip_list: Force-field names whose JSON energy files should be loaded.
+        data_dir: Directory containing the energy JSON files.
+        batchfn_root: Common prefix used by the energy files.
+        output_fn: Optional path at which to write the selected output columns.
+
+    Returns:
+        A copy of the input DataFrame with one ``E_<MLIP>`` column per loaded
+        force field.
+    """
     if type(structures_df) == pd.DataFrame:
         struc_df = structures_df.copy()
     else:
@@ -249,6 +308,19 @@ def construct_phase_diagrams(
         dataframe_savedir: str | PathLike | None,
         phasediagram_savedir: str | PathLike | None = None,
 ):
+    """Construct phase diagrams and calculate formation and hull energies.
+
+    Args:
+        hdp_df: DataFrame of target HDPs with a ``subsystems`` column.
+        subsys_MLIPenergy_df: DataFrame containing subsystem structures,
+            chemical systems, and ``E_<MLIP>`` energy columns.
+        dataframe_savedir: Optional directory for the resulting CSV files.
+        phasediagram_savedir: Optional directory for serialized phase
+            diagrams.
+
+    Returns:
+        A tuple containing the e-above-hull and formation-energy DataFrames.
+    """
     from pymatgen.analysis.phase_diagram import PhaseDiagram, PDEntry, plotly_layouts
     from monty.serialization import dumpfn
 
@@ -273,6 +345,8 @@ def construct_phase_diagrams(
 
 
         for mlip in mlip_names:
+            # A phase diagram is valid only when every required endpoint and
+            # subsystem has an energy for this MLIP.
             rel_subsys = subsys_MLIPenergy_df[subsys_MLIPenergy_df['chemsys'].isin(subsys_list)]
             # print(comp_id, '\t', rel_subsys.loc[comp_id][f"E_{mlip}"])
 
@@ -335,6 +409,12 @@ def summarize_results(
         ehull_df: pd.DataFrame,
 
 ):
+    """Print missing-data counts and stability shares for each MLIP.
+
+    Args:
+        mlip_df: DataFrame containing the raw ``E_<MLIP>`` energy columns.
+        ehull_df: DataFrame containing e-above-hull values by MLIP.
+    """
     print('MLIP:', '\t','NaN vals:')
     for mlip in [x for x in mlip_df.columns if x.startswith('E_')]:
         all_ens = mlip_df[mlip].dropna()

@@ -193,13 +193,13 @@ def stable_counts(
 if __name__ == "__main__":
 
     hdp_df = pd.read_csv(
-        "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/E_above_hull/HDP_CombinedInfo_WithChemSys.csv",
+        "../E_above_hull/HDP_CombinedInfo_WithChemSys.csv",
         index_col=0,
     )
     hdp_df.set_index("comp", inplace=True)
 
     ehull_df = pd.read_csv(
-        "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/E_above_hull/HDP_Ehull_overview.csv",
+        "../E_above_hull/HDP_Ehull_overview.csv",
         index_col=0,
     )
 
@@ -213,12 +213,12 @@ if __name__ == "__main__":
         normalize=False,
     )
     fig1.update_layout(height=500)
-    fig1.write_image("images/MLIPStab_Ehull150.png", width=1800, height=500, scale=2.2)
-    fig1.write_html("images/MLIPStab_Ehull150.html")
+    fig1.write_image("ehull_images/MLIPStab_Ehull150.png", width=1800, height=500, scale=2.2)
+    fig1.write_html("ehull_images/MLIPStab_Ehull150.html")
     fig1.show()
 
     input_data = pd.read_csv(
-        "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/WorkFlow/ImplementedWorkFlow/UsedInput_HDPLedger_BkCfFmMd_removed.csv",
+        "../WorkFlow/ImplementedWorkFlow/UsedInput_HDPLedger_BkCfFmMd_removed.csv",
         header=None,
     )
     input_data["compID"] = input_data.apply(lambda row: f"{row[7]}_{row[0]}", axis=1)
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     input_data["element.X"] = input_data[6]
     # print(input_data)
     d1 = pd.read_csv(
-        "/home/lwalterb/hdp_project/HDP_WorkFlow_Analysis/WorkFlow/ImplementedWorkFlow/HDPLedger_NoCs6s.csv",
+        "../HDP_WorkFlow_Analysis/WorkFlow/ImplementedWorkFlow/HDPLedger_NoCs6s.csv",
         index_col=[0, 1],
     ).T
     d1 = d1.loc[input_data.index]
@@ -262,9 +262,9 @@ if __name__ == "__main__":
     )
 
     fig2.write_image(
-        "images/NonConvOverview_CalcStep.png", width=1800, height=900, scale=2.2
+        "ehull_images/NonConvOverview_CalcStep.png", width=1800, height=900, scale=2.2
     )
-    fig2.write_html("images/NonConvOverview_CalcStep.html")
+    fig2.write_html("ehull_images/NonConvOverview_CalcStep.html")
     fig2.show()
 
     xcount = input_data.loc[nonconv_overview['5LOB']].groupby('element.X')
@@ -296,8 +296,8 @@ if __name__ == "__main__":
     )
     # fig4.update_layout(barmode="stack")
     fig4.show()
-    fig4.write_image("images/NonConvOverview_Xel.png",width=1800,height=900,scale=2.2)
-    fig4.write_html("images/NonConvOverview_Xel.html")
+    fig4.write_image("ehull_images/NonConvOverview_Xel.png",width=1800,height=900,scale=2.2)
+    fig4.write_html("ehull_images/NonConvOverview_Xel.html")
 
     import plotly.express as px
 
@@ -343,6 +343,6 @@ if __name__ == "__main__":
             "font": {"size": 28},
         }
     )
-    fig3.write_image("images/Ehull_vs_Tau.png", width=1800, height=500, scale=2.2)
-    fig3.write_html("images/Ehull_vs_Tau.html")
+    fig3.write_image("ehull_images/Ehull_vs_Tau.png", width=1800, height=500, scale=2.2)
+    fig3.write_html("ehull_images/Ehull_vs_Tau.html")
     fig3.show()
