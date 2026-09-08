@@ -23,7 +23,7 @@ subsys_df = pd.read_csv('hdp_mp_subsysandhdps.csv',index_col=0)
 
 relax_kwargs = {
     # "steps" : 1000,
-    "fmax" : 0.05,
+    "fmax" : 0.005,
     "maxstep": 0.05,
 }
 optimizer_kwargs = {
@@ -69,30 +69,6 @@ mlip_specifications = {
             "default_dtype" : "float64"
         }
     },
-    "Nequip-OAM-XL" : {
-        "model_name" : "Nequip",
-        "mlip_kwargs" : {
-            "compile_path" : "/home/lwalterb/hdp_ehull/COMPILED_MODELS/mir-group__NequIP-OAM-XL__0.1.nequip.pt2",
-            "device" : "cuda",
-            "default_dtype" : "float64",
-        }
-    },
-    "MatterSim" : {
-        "model_name" : {"@module": "mattersim.forcefield.potential","@callable": "MatterSimCalculator"},
-        "mlip_kwargs": {
-            "potential" : "mattersim-v1.0.0-5m",
-            "device" : "cuda",
-            "default_dtype" : "float64"
-        },
-    },
-    "Equiformer_v3" : {
-        "model_name" : {"@module": "fairchem.core.common.relaxation.ase_utils", "@callable": "OCPCalculator"},
-        "mlip_kwargs" : dict(
-            checkpoint_path= "/home/lwalterb/.cache/huggingface/hub/models--mirror-physics--equiformer_v3/snapshots/ca3ce91a7109ecce14cd198b67616a9b290ef64a/checkpoint/omat24-mptrj-salex_gradient.pt",
-            local_cache="pretrained_models",
-            cpu=False,
-        )
-    }
 }
 
 
