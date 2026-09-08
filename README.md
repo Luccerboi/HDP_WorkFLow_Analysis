@@ -7,9 +7,16 @@ This repository contains tools used for the creation of our database published a
 ## Repository structure
 
 - `AnalysisResults/` - Contains output data: Summarized data in .csv format. Scatter plots for spin magnetic moment vs. bandgap. Periodic Table heatmaps with several quantities averaged per element.
+- `E_above_hull/` - Scripts and data for relaxing HDP and subsystem structures with machine-learned interatomic potentials (MLIPs), constructing phase diagrams, and calculating formation energies and energies above the convex hull. See [`E_above_hull/README.md`](E_above_hull/README.md) for details.
 - `HDP_PermutationMaker/` - Scripts used to generate all possible Halide Double Perovskite permutations, based on the tolerance factor from [Bartel et al.](https://www.science.org/doi/10.1126/sciadv.aav0693).
 - `PlottingScripts/` - plotting functions and notebooks for visualization.
 - `WorkFlow/` - main workflow automation engine for job creation, submission, queue management, and monitoring.
+
+## `E_above_hull/`
+
+This directory contains the MLIP-based energy and phase-diagram workflow. Its scripts relax structures using `atomate2`, `jobflow`, and `pymatgen`, save MLIP-specific energies, and use those energies to calculate formation energies and e-above-hull values for HDP compositions. It also contains analysis notebooks, plotting utilities, MLIP environment requirements, jobflow store configurations, input tables, missing-structure tables, and saved MLIP results.
+
+The `run_*.py` scripts execute batches of MLIP calculations, while the `drive_*.py` scripts distribute those batches across workers. `PD_Construction.ipynb` combines the calculated energies with structure metadata and constructs the phase diagrams. Detailed file descriptions and running notes are available in [`E_above_hull/README.md`](E_above_hull/README.md).
 
 ## `WorkFlow/` contents
 
