@@ -1,0 +1,10 @@
+JOB_STORE:
+  docs_store:
+    type: MontyStore
+    collection_name: 7net_mpaloe_data
+    database_path: /home/lwalterb/hdp_ehull/jobstores/7net_mpaloe_docstore.db
+  additional_stores:
+    data:
+      type: MontyStore
+      collection_name: 7net_mpaloe_blobs
+      database_path: /home/lwalterb/hdp_ehull/jobstores/7net_mpaloe_addstore.db
