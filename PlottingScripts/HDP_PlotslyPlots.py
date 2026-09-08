@@ -539,25 +539,25 @@ if __name__ == "__main__":
         "Average Dir.Asym.Index (ICOHP)": {
             "colB1": "Icohp.B1.directional_asym_index",
             "colB2": "Icohp.B2.directional_asym_index",
-            "format": ".2f",
+            "format": ".2g",
             "exclude_element": [],
         },
         "Average Axial.Asym.Index (ICOHP)": {
             "colB1": "Icohp.B1.axial_asym_index",
             "colB2": "Icohp.B2.axial_asym_index",
-            "format": ".2f",
+            "format": ".2g",
             "exclude_element": [],
         },
         "Average Dir.Asym.Index (ICOBI)": {
             "colB1": "Icobi.B1.directional_asym_index",
             "colB2": "Icobi.B2.directional_asym_index",
-            "format": ".2f",
+            "format": ".2g",
             "exclude_element": [],
         },
         "Average Axial.Asym.Index (ICOBI)": {
             "colB1": "Icobi.B1.axial_asym_index",
             "colB2": "Icobi.B2.axial_asym_index",
-            "format": ".2f",
+            "format": ".2g",
             "exclude_element": [],
         },
         "Average popdiff": {
@@ -587,7 +587,7 @@ if __name__ == "__main__":
     }
 
     for plot_type in col_dict.keys():
-        ptable = plot_ptable(dcomb, color_value="Average Band Gap (eV)")
+        ptable = plot_ptable(dcomb, color_value=plot_type)
         ptable.write_image(file=saving_dir / f"PTable_{plot_type.replace(" ","_")}.svg")
 
     # fig = plot_coxx(test_comp1, info_df_path, coxx_type='cohp')

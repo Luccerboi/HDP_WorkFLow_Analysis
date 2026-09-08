@@ -28,43 +28,45 @@ Shared functions for the calculation and analysis workflow:
 
 ## Relaxation and batch drivers
 
-### `run_ehull_calcs.py`
+The calculation scripts are organized into two general roles:
 
-Runs one batch of MLIP relaxations for structures listed in `MissingStrucs_<MLIP>.csv`. It converts serialized structure dictionaries into `pymatgen.Structure` objects, calls `mlip_relax_batched`, and merges the returned energies into `ExpensiveMLIPs/mpid_energy_dict_<MLIP>.json` while holding a file lock.
+### `run_*.py` scripts
 
-Command-line arguments:
+The `run_*.py` scripts execute a particular batch of MLIP calculations. They generally:
+
+1. Read either the full subsystem table (`hdp_mp_subsysandhdps.csv`) or an MLIP-specific missing-structure table (`MissingStrucs_<MLIP>.csv`).
+2. Convert serialized structure dictionaries into `pymatgen.Structure` objects.
+3. Select the MLIP model and its calculator settings from an `mlip_specifications` mapping.
+4. Relax the structures using either the batched or individual relaxation helper in `ehull_utils.py`.
+5. Print progress and, for the production batch paths, merge energies into an MLIP-specific JSON dictionary while holding a file lock.
+
+The scripts differ by calculation variant rather than by overall workflow:
+
+- Some use `mlip_relax_batched` to process a list of structures as one job.
+- Some use `mlip_relax_and_get_energies` to create separate jobs for each structure.
+- Some convert structures to conventional cells before relaxation.
+- Some target a particular MLIP or resume a particular portion of the full subsystem calculation.
+- The batch-oriented path writes results to `ExpensiveMLIPs/mpid_energy_dict_<MLIP>.json`; other scripts may print results or have output code disabled for testing.
+
+The usual command-line interface for a batch script is:
 
 ```text
-python run_ehull_calcs.py <MLIP> <batch size> <batch number>
+python run_<variant>.py <MLIP> <batch size> <batch number>
 ```
 
-### `drive_ehull_calcs.py`
+The exact variant name and supported MLIP names must be checked in the selected script's `mlip_specifications` mapping. The available `run_*.py` files include the standard e-hull batch path, a conventional-cell/convergence path, a full-subsystem batch path, and the GRACE-specific path.
 
-Splits the missing-structure input for an MLIP across workers. Each worker calls `run_ehull_calcs.py` for every batch assigned to it.
+### `drive_*.py` scripts
+
+The `drive_*.py` scripts distribute batches across workers. Each driver reads the relevant input table, calculates the number of batches, assigns every worker a subset of batch numbers, and launches a corresponding `run_*.py` script through `subprocess.run`.
+
+The usual command-line interface is:
 
 ```text
-python drive_ehull_calcs.py <worker id> <number of workers> <MLIP>
+python drive_<variant>.py <worker id> <number of workers> <MLIP>
 ```
 
-### `run_batch_ehull.py`
-
-A related batch driver that reads the full `hdp_mp_subsysandhdps.csv` input rather than the MLIP-specific missing-structure CSV. It uses batched relaxation and prints the returned energy dictionary; its JSON-writing code is currently commented out.
-
-### `run_conv_ehull.py`
-
-Runs a batch using `mlip_relax_and_get_energies` rather than the batched helper. It reads `MissingStrucs_<MLIP>.csv`, converts structures to conventional cells, and merges results into an MLIP JSON dictionary under a file lock.
-
-### `drive_eqv3_calcs.py`
-
-Worker launcher for an Equiformer-v3-style calculation path. It calls `run_eqv3_ehull.py`; that target script is not present in this directory, so this launcher is not self-contained here.
-
-### `drive_grace_calcs.py`
-
-Worker launcher for GRACE calculations. It reads the full subsystem table to determine the number of batches, starts at batch offset 135, and calls `run_grace_calcs.py`.
-
-### `run_grace_calcs.py`
-
-Runs GRACE relaxation batches for the full subsystem table and merges results into `ExpensiveMLIPs/mpid_energy_dict_<MLIP>.json`.
+The Slurm submission scripts in this directory use these drivers to start multiple workers on GPU nodes. `check_completion.sh` can be used to inspect the resulting jobs and output files.
 
 ## Analysis notebooks and plotting
 
@@ -126,7 +128,6 @@ The relaxation scripts may also create an `ExpensiveMLIPs/` directory at runtime
 - `submit_svnnet.sh`: Slurm setup and launch for SevenNet-MPALOE with four concurrent workers.
 - `submit_svnomat.sh`: Slurm setup and launch for SevenNet-omat24 with four concurrent workers.
 - `check_completion.sh`: reports running Slurm jobs, completed batches, failed entries, runtime, and recent log output.
-- `compile_nequip.sh`: Slurm script that compiles the NequIP-OAM-XL model for CUDA/ASE use.
 
 The submission scripts activate MLIP-specific micromamba environments, set CUDA/CPU environment variables, select a jobflow configuration, and launch the corresponding driver. Their `JOBFLOW_CONFIG_FILE` values point to `/home/lwalterb/hdp_ehull/jobflow_settings/...`; verify those absolute paths before using the scripts from another checkout or directory layout.
 
