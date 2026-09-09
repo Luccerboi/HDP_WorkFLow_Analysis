@@ -2927,6 +2927,7 @@ class GroupedAnalysis:
                 ]
 
             # print(edgedf.shape)
+            # print(edgedf)
             edgedf = edgedf.loc[edgedf[["vbmorbchar", "cbmorbchar"]].dropna().index]
             edgedf["transition_sites"] = [
                 x[0] + "-" + y[0] for x, y in zip(edgedf["vbmsite"], edgedf["cbmsite"])
@@ -2937,12 +2938,12 @@ class GroupedAnalysis:
             ]
 
             return edgedf
-
         comb_df = pd.concat(
-            [basicdf, banddf.xs("combined", level=1), structuraldf, lobsterdf],
+            [basicdf, banddf.xs("combined", level=1), structuraldf, lobsterdf, ehulldf],
             axis=1,
             join="inner",
         )
+        # print(comb_df.head())
         if add_transitions:
             trans_df = determineTransitionBands(comb_df, include_x=include_x)
             comb_df = comb_df.join(trans_df)
@@ -3074,7 +3075,7 @@ if __name__ == "__main__":
         data_output_dir / "HDP_bandedgeInfo_lsodos.csv", index_col=[0, 1]
     )
     dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo.csv", index_col=0)
-    dehull = pd.read_csv(data_output_dir / "HDP_Ehull_overview.csv")
+    dehull = pd.read_csv(data_output_dir / "HDP_Ehull_overview.csv",index_col=0)
 
     # #####combine dataframes into one single df
     dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic,dehull, add_transitions=True, include_x=True)
