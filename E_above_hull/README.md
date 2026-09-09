@@ -1,6 +1,6 @@
 # E_above_hull
 
-This directory contains scripts, input tables, jobflow configuration, and saved results for calculating energies with machine-learned interatomic potentials (MLIPs), then using those energies to construct phase diagrams and calculate formation energies and energies above the convex hull for HDP structures.
+This directory contains scripts, input tables, jobflow configuration, and saved results for calculating energies with machine-learned interatomic potentials (MLIPs), then using those energies to construct phase diagrams and calculate formation energies and energy-above-hull for HDP structures.
 
 The main workflow is:
 
@@ -8,7 +8,7 @@ The main workflow is:
 2. Relax structures with an MLIP through `atomate2`, `jobflow`, and `pymatgen`.
 3. Save relaxed energies in MLIP-specific JSON dictionaries.
 4. Combine the energies with structure metadata in `PD_Construction.ipynb`.
-5. Construct phase diagrams and save e-above-hull and formation-energy tables.
+5. Construct phase diagrams and save energy-above-hull and formation-energy tables.
 6. Optionally save serialized phase diagrams for plotting or later inspection.
 
 ## Python utilities
@@ -109,7 +109,7 @@ Each contains `chemsys`, `nsites`, and `structure_dict` for structures without a
 ### Summary tables
 
 - `HDP_Ehull_MissingStrucs.csv`: MLIP-by-MLIP missing-entry information, with MLIP columns and a `composition` column.
-- `HDP_Ehull_overview.csv`: summary statistics for formation energy and e-above-hull results, including means, standard deviations, entry counts, and stability thresholds at 100, 150, and 200 meV/atom.
+- `HDP_Ehull_overview.csv`: summary statistics for formation energy and energy-above-hull results, including means, standard deviations, entry counts, and stability thresholds at 100, 150, and 200 meV/atom.
 
 ### `MLIP_Results/`
 
