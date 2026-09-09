@@ -193,7 +193,7 @@ def stable_counts(
 if __name__ == "__main__":
 
     hdp_df = pd.read_csv(
-        "../E_above_hull/HDP_CombinedInfo_WithChemSys.csv",
+        "../E_above_hull/HDP_CombinedInfo_WithStructures.csv",
         index_col=0,
     )
     hdp_df.set_index("comp", inplace=True)
