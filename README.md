@@ -170,7 +170,7 @@ When the workflow was run initially, there were some duplicate entries (e.g., Cs
   - `HDP_StructuralInfo.csv` Contains some interatomic distances from the relaxed *Fm3m* structure.
   - `HDP_bandedgeInfo_lsodos.csv` Contains VBM, CBM, bandgaps, and pDOS contributions to 0.5eV around the bandedges for each element. Analyzed from DOSCAR.lso.lobster file. Data is given for spin-up, spin-down, and combined spin-channels.
   - `HDP_LobsterInfo.csv` Contains data extracted from LOBSTER projection (ICOHP/ICOBI values), and a bonding descriptor describing asymmetry in ICOHP/ICOBI along x,y,z,-axes.
-  - `HDP_Ehull_overview.csv` Contains the average value and standard deviation of the Formation Energy($E_{form}$) and Energy Above Hull($E_{hull}$) predictions from the 4 MLIPs. Also contains the number of MLIPs that predict each HDP composition to be stable at three different heuristic $E_{hull}$ limits: $E_{hull}\leq 100; 150; 200$ meV/atom.
+  - `HDP_Ehull_overview.csv` Contains the average value and standard deviation of the formation energy($E_{form}$) and energy-above-hull ($E_{hull}$) predictions from the 4 MLIPs. Also contains the number of MLIPs that predict each HDP composition to be stable at three different heuristic $E_{hull}$ limits: $E_{hull}\leq 100; 150; 200$ meV/atom.
   - `HDP_Ehull_data_full.csv` Contains the $E_{hull}$ predictions from each MLIP individually.
   - `HDP_Eform_data_full.csv` Contains the $E_{form}$ predictions from each MLIP individually.
 
