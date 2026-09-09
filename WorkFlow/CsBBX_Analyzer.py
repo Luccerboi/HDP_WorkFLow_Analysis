@@ -2841,6 +2841,7 @@ class GroupedAnalysis:
         lobsterdf: pd.DataFrame,
         structuraldf: pd.DataFrame,
         basicdf: pd.DataFrame,
+        ehulldf: pd.DataFrame,
         add_transitions: bool = True,
         include_x: bool = True,
     ):
@@ -2854,6 +2855,7 @@ class GroupedAnalysis:
             lobsterdf (pd.DataFrame): DataFrame of lobster output Analysis
             structuraldf (pd.DataFrame): DataFrame of structural data
             basicdf (pd.DataFrame): DataFrame of basic/input data
+            ehulldf (pd.DataFrame): DataFrame contianing Energy Above Hull Data.
             add_transitions (bool, optional): Whether to add seperate description of main orbitals involved in transition. Defaults to True.
             include_x (bool, optional): Whether to include the X-site contributions to the transition. Defaults to True.
         """
@@ -3025,7 +3027,7 @@ class GroupedAnalysis:
 
 
 if __name__ == "__main__":
-    data_output_dir = Path("./AnalysisResults")
+    data_output_dir = Path("../AnalysisResults")
     g = GroupedAnalysis(p, testing=0)
     #
     print("starting basis selection")
@@ -3066,15 +3068,17 @@ if __name__ == "__main__":
     # dstuc.to_csv(f'{data_output_dir}/HDP_StructuralInfo_{time.strftime("%y%m%d")}.csv')
 
     # #read previous data in stead of collecting
-    dbasic = pd.read_csv(data_output_dir / "HDP_BasicInfo_260510.csv", index_col=0)
-    dlobster = pd.read_csv(data_output_dir / "HDP_LobsterInfo_260510.csv", index_col=0)
+    dbasic = pd.read_csv(data_output_dir / "HDP_BasicInfo.csv", index_col=0)
+    dlobster = pd.read_csv(data_output_dir / "HDP_LobsterInfo.csv", index_col=0)
     dband = pd.read_csv(
-        data_output_dir / "HDP_bandedgeInfo_lsodos_260510.csv", index_col=[0, 1]
+        data_output_dir / "HDP_bandedgeInfo_lsodos.csv", index_col=[0, 1]
     )
-    dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo_260510.csv", index_col=0)
+    dstuc = pd.read_csv(data_output_dir / "HDP_StructuralInfo.csv", index_col=0)
+    dehull = pd.read_csv(data_output_dir / "HDP_Ehull_overview.csv")
 
     # #####combine dataframes into one single df
-    dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic)
+    dcomb = GroupedAnalysis.combine_dfs(dband, dlobster, dstuc, dbasic,dehull, add_transitions=True, include_x=True)
+    dcomb.to_csv(data_output_dir / "HDP_CombinedInfo.csv")
 
     # Remove Duplicate entries
     # nodup_output = data_output_dir / "HDP_Data_NoDups"

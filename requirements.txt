@@ -114,7 +114,7 @@ latexcodec==2.0.1
 lazy_loader==0.4
 linkify-it-py==2.0.3
 llvmlite==0.45.1
-lobsterpy==0.5.8.dev46+g23e3e320c
+lobsterpy==0.6.0
 locket==1.0.0
 logistro==2.0.0
 lxml==6.0.2

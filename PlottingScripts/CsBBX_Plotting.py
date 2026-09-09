@@ -1032,11 +1032,11 @@ def compare_alattice(
 
 
 anal_dir = Path("../AnalysisResults/")
-basicinfo_csv = anal_dir / "HDP_BasicInfo_260510.csv"
-edgeinfo_csv = anal_dir / "HDP_bandedgeInfo_lsodos_260510.csv"
-lobinfo_csv = anal_dir / "HDP_LobsterInfo_260510.csv"
-combinfo_csv = anal_dir / "HDP_CombinedInfo_260510.csv"
-strucutralinfo_csv = anal_dir / "HDP_StructuralInfo_260510.csv"
+basicinfo_csv = anal_dir / "HDP_BasicInfo.csv"
+edgeinfo_csv = anal_dir / "HDP_bandedgeInfo_lsodos.csv"
+lobinfo_csv = anal_dir / "HDP_LobsterInfo.csv"
+combinfo_csv = anal_dir / "HDP_CombinedInfo.csv"
+strucutralinfo_csv = anal_dir / "HDP_StructuralInfo.csv"
 dbasic = pd.read_csv(basicinfo_csv, index_col=0)
 dedge = pd.read_csv(edgeinfo_csv, index_col=[0, 1])
 dlob = pd.read_csv(lobinfo_csv, index_col=0)

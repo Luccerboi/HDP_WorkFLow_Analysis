@@ -376,8 +376,8 @@ class Compound:
             dict: a Dictonary of 'element':'basis functions' that are to be used in LOBSTER projection
         """
 
-        basisfile = f"./assests/BASIS_PBE_64_{basis}.yaml"
-        LUTpath = "./assets/potLUT_nofrozen"
+        basisfile = f"assets/BASIS_PBE_64_{basis}.yaml"
+        LUTpath = "assets/potLUT_nofrozen"
 
         with open(LUTpath, "rt") as f:
             LUTlines = f.readlines()

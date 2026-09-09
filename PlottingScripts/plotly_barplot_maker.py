@@ -199,7 +199,7 @@ if __name__ == "__main__":
     hdp_df.set_index("comp", inplace=True)
 
     ehull_df = pd.read_csv(
-        "../E_above_hull/HDP_Ehull_overview.csv",
+        "../AnalysisResults/HDP_Ehull_overview.csv",
         index_col=0,
     )
 

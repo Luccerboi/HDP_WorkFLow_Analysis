@@ -2,7 +2,7 @@
 
 # HDP WorkFlow Analysis
 
-This repository contains tools used for the creation of our database published as [Spin-Polarized Electronic Structure and Chemical Bonding Data for 2,500+ Halide Double Perovskites](https://doi.org/10.48550/arXiv.2606.11928). It contains functionality for creating input files, monitoring completion, and analyzing results. The main automation logic lives under the `WorkFlow/` folder. The full dataset is available over [NOMAD](http://doi.org/10.17172/nomad.wb9y-b8j7). The manuscript giving more details will be available soon.
+This repository contains tools used for the creation of our database published as [Spin-Polarized Electronic Structure and Chemical Bonding Data for 2,500+ Halide Double Perovskites](https://doi.org/10.48550/arXiv.2606.11928). It contains functionality for creating input files, monitoring completion, and analyzing results. The main automation logic lives under the `WorkFlow/` folder. The full dataset is available over [NOMAD](http://doi.org/10.17172/nomad.wb9y-b8j7).
 
 ## Repository structure
 
@@ -148,10 +148,13 @@ The Python scripts in `PlottingScripts/` provide plotting utilities for both int
 - `PtablePlot.ipynb`
   - Was used to create the periodic table plot showing which elements are featured on which sites in all possible permutations.
   - Also used to create the bar plot showing the B-B block pairing counts for the stable Cs-HDPs.
-  - Both these figures are featured in Figure 1 of [our publication](LINK TO OUR PUBLICATION)
+  - Both these figures are featured in Figure 1 of [our publication](https://doi.org/10.48550/arXiv.2606.11928)
 
 - `ChargeSpill_FigMaker.ipynib`
   - Was used to make the histogram showing the charge spilling from the LOBSTER projection for all compositions.
+
+- `plotly_barplot_maker.py`
+  - Script used for creating barplot showing the number of times each B-cation is predicted to be part of an unstable HDP, as well as the barplots showing the amount of times each B-cation encountered convergence issues. 
 
 ## Data in `AnalysisResults`
 
@@ -162,10 +165,16 @@ When the workflow was run initially, there were some duplicate entries (e.g., Cs
 - `Duplicated_Unstable_HDPs_CombinedInfo.csv` the info contained in the CombinedInfo.csv for the compositions that were later filtered out based on the updates to the permutation maker.
 - `NonConverged_HDPComp_list.txt` list of all compositions that did not complete the full workflow. All ran out of the maximum number of tries in some step of the workflow. The full data can be extracted by retrieving the CompletionOverview form the ProcessLedger. This list may still contain some duplicates or (predicted) unstable compositions.
 
-- Several .csv files containing data extracted using `CsBBX_Analyzer.py` and outlined in the [Data Descriptor](LINK TO OUR PAPER)
-  - `HDP_BasicInfo_260510.csv` Contains info on input species, used LOBSTER basisset, and some elemental data.
-  - `HDP_StructuralInfo_260510.csv` Contains some interatomic distances from the relaxed *Fm3m* structure.
-  - `HDP_bandedgeInfo_lsodos_260510.csv` Contains VBM, CBM, bandgaps, and pDOS contributions to 0.5eV around the bandedges for each element. Analyzed from DOSCAR.lso.lobster file. Data is given for spin-up, spin-down, and combined spin-channels.
-  - `HDP_LobsterInfo_260510.csv` Contains data extracted from LOBSTER projection (ICOHP/ICOBI values), and a bonding descriptor describing asymmetry in ICOHP/ICOBI along x,y,z,-axes.
+- Several .csv files containing data extracted using `CsBBX_Analyzer.py` and outlined in the [Data Descriptor](https://doi.org/10.48550/arXiv.2606.11928)
+  - `HDP_BasicInfo.csv` Contains info on input species, used LOBSTER basisset, and some elemental data.
+  - `HDP_StructuralInfo.csv` Contains some interatomic distances from the relaxed *Fm3m* structure.
+  - `HDP_bandedgeInfo_lsodos.csv` Contains VBM, CBM, bandgaps, and pDOS contributions to 0.5eV around the bandedges for each element. Analyzed from DOSCAR.lso.lobster file. Data is given for spin-up, spin-down, and combined spin-channels.
+  - `HDP_LobsterInfo.csv` Contains data extracted from LOBSTER projection (ICOHP/ICOBI values), and a bonding descriptor describing asymmetry in ICOHP/ICOBI along x,y,z,-axes.
+  - `HDP_Ehull_overview.csv` Contains the average value and standard deviation of the Formation Energy($E_{form}$) and Energy Above Hull($E_{hull}$) predictions from the 4 MLIPs. Also contains the number of MLIPs that predict each HDP composition to be stable at three different heuristic $E_{hull}$ limits: $E_{hull}\leq 100; 150; 200$ meV/atom.
+  - `HDP_Ehull_data_full.csv` Contains the $E_{hull}$ predictions from each MLIP individually.
+  - `HDP_Eform_data_full.csv` Contains the $E_{form}$ predictions from each MLIP individually.
 
 - `FoundICSD_HDPs.txt` gives an overview of all ICSD entries we found matching the Cesium-HDP chemical formula. It features CollectionCode, Chemical formula, Title, Authors, and Reference for all found matches.
+
+## Data in `ConvergenceCheck`
+In order to test whether an energy convergence of $10^{-4}$ eV was enough, 10 randomly sampled HDPs (5 magnetic, 5 half-metals) were converged to $10^{-6}$ eV. This subdirectory contains the parsed Densities of States, the script used to make the comparison plots (`convergence_compare.py`), and the figures (`images/`).
